@@ -54,16 +54,22 @@ class Process(Thread):
                 self.log("I'm the last process, I'm starting to send the token")
                 self.com.sendToken()
 
+            if (loop == 1):
+                b2 = Bidule("message broadcast")
+                self.com.broadcastSync(0, b2)
+
             if self.getName() == "P0":
 
                 if (loop == 1):
                     b1 = Bidule("message normal")
-                    b2 = Bidule("message broadcast")
                     b3 = Bidule("message target")
 
-                    self.com.send(b1)
-                    self.com.broadcast(b2)
-                    self.com.sendTo(2, b3)
+                    self.com.broadcast(b1)
+                    # sleep is here to avoid the message to be sent before the receiver is ready
+                    # TODO: fix negative aknowledgements when having sendtosync and broadcast sync
+                    # sleep(1)
+                    # self.com.sendToSync(1, b3)
+                    # self.com.sendTo(2, b3)
                     self.com.synchronize()
 
                 if (loop == 2):
@@ -78,9 +84,11 @@ class Process(Thread):
                             "I'm can't access the critical section since I'm dying")
 
             if self.getName() == "P1":
+                # self.com.recevFromSync(0)
                 self.log("I'm gonna sleep for 1 second")
                 sleep(1)
                 self.log("I'm done sleeping")
+
                 if (loop == 1):
                     self.com.synchronize()
 

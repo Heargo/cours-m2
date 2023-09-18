@@ -125,12 +125,12 @@ class Com(Thread):
         if not event.isForMe(self.myId):
             return
 
-        self.log(f"RECEIVED token from {event.sender}")
+        # self.log(f"RECEIVED token from {event.sender}")
         self.tokenPossessed = True
 
         if not self.needToken:
             sleep(0.1)
-            self.log("I don't need the token, I'm gonna send it")
+            # self.log("I don't need the token, I'm gonna send it")
             self.sendToken()
 
     def sendToken(self):
@@ -139,7 +139,7 @@ class Com(Thread):
 
         nextProcess = (self.myId+1) % self.nbProcess
         token = Token(self.myId, nextProcess)
-        self.log(f"SEND {token}")
+        # self.log(f"SEND {token}")
         self.tokenPossessed = False
         PyBus.Instance().post(token)
 
@@ -227,17 +227,20 @@ class Com(Thread):
         self.log(f"SEND {ack}")
         PyBus.Instance().post(ack)
 
-    def broadcastSync(self, data):
-        self.broadcast(data, "SYNC")
+    def broadcastSync(self, fromId, data):
 
-        # we wait until everyone has received the message
-        while len(self.syncAknowledgement) != self.nbProcess-1:
-            sleep(0.1)
-            self.log(
-                f"Waiting for {self.nbProcess-1-len(self.syncAknowledgement)} aknowledgements")
+        if (self.myId == fromId):
+            self.broadcast(data, "SYNC")
+            # we wait until everyone has received the message
+            while len(self.syncAknowledgement) != self.nbProcess-1:
+                sleep(0.1)
+                self.log(
+                    f"Waiting for {self.nbProcess-1-len(self.syncAknowledgement)} aknowledgements")
 
-        self.syncAknowledgement = []
-        self.log("Everyone received the broadcast")
+            self.syncAknowledgement = []
+            self.log("Everyone received the broadcast")
+        else:
+            self.recevFromSync(fromId)
 
     def sendToSync(self, target, data):
         self.sendTo(target, data, "SYNC")
