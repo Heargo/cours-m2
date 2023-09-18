@@ -1,6 +1,6 @@
-from threading import Lock, Thread
+from threading import Thread
 
-from time import sleep, time
+from time import sleep
 
 # from geeteventbus.subscriber import subscriber
 # from geeteventbus.eventbus import eventbus
@@ -27,13 +27,17 @@ class Process(Thread):
         self.myId = Process.nbProcess
         Process.nbProcess += 1
         self.setName(name)
-        self.clock = 0
         PyBus.Instance().register(self, self)
+        # Lamport clock
+        self.clock = 0
+        # synchronization. Choose to use two boolean to make the conditions easier to read and understand
         self.tokenPossessed = False
         self.needToken = False
         self.synchronizingProcesses = []
         self.stoppedProcesses = []
 
+        # state. If alive, the process is running.
+        # If dead, the process is stopped if not alive and not dead, the process is being killed (zombie)
         self.alive = True
         self.dead = False
         self.start()
@@ -63,6 +67,7 @@ class Process(Thread):
         else:
             self.log(
                 f"Process {stoppedProc} has stopped. Let's verify if I can restart")
+
             # remove from synchronizing list
             if stoppedProc in self.synchronizingProcesses:
                 self.synchronizingProcesses.remove(stoppedProc)
@@ -248,7 +253,7 @@ class Process(Thread):
         self.alive = False
         self.synchronizingProcesses = []
         self.log(f"Process {self.myId} is stopping")
-        # stop = Stop(self.myId)
-        # PyBus.Instance().post(stop)
+        stop = Stop(self.myId)
+        PyBus.Instance().post(stop)
         self.join()
         self.log("TERMINATED")
