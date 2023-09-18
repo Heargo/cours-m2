@@ -8,6 +8,7 @@ from messages.TargetMessage import TargetMessage
 from messages.Token import Token
 from messages.Sync import Sync
 from messages.Stop import Stop
+from messages.Acknowledge import Acknowledge
 
 
 class Com(Thread):
@@ -27,6 +28,12 @@ class Com(Thread):
         self.needToken = False
         self.synchronizingProcesses = []
         self.stoppedProcesses = []
+
+        # inbox
+        self.inbox = []
+
+        # sync aknowledgement
+        self.syncAknowledgement = []
 
         # state. If alive, the process is running.
         # If dead, the process is stopped if not alive and not dead, the process is being killed (zombie)
@@ -150,13 +157,14 @@ class Com(Thread):
         self.sendToken()
 
     #############################
-    ######  COMMUNICATION  ######
+    ##  COMMUNICATION - ASYNC  ##
     #############################
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=Message)
     def onMessage(self, event: Message):
         self.inc_clock(event.getClock())
         self.log(f"RECEIVED {event}")
+        self.inbox.append(event)
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=BroadcastMessage)
     def onBroadcast(self, event: BroadcastMessage):
@@ -165,6 +173,7 @@ class Com(Thread):
 
         self.inc_clock(event.getClock())
         self.log(f"RECEIVED {event}")
+        self.inbox.append(event)
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=TargetMessage)
     def onTarget(self, event: TargetMessage):
@@ -173,6 +182,7 @@ class Com(Thread):
 
         self.inc_clock(event.getClock())
         self.log(f"RECEIVED {event}")
+        self.inbox.append(event)
 
     def send(self, data):
         self.inc_clock()
@@ -182,18 +192,79 @@ class Com(Thread):
         self.log(f"SEND {msg}")
         PyBus.Instance().post(msg)
 
-    def broadcast(self, data):
+    def broadcast(self, data, type="ASYNC"):
         self.inc_clock()
-        msg = BroadcastMessage(self.myId, data)
+        msg = BroadcastMessage(self.myId, data, type)
 
         msg.setClock(self.clock)
         self.log(f"BROADCAST {msg}")
         PyBus.Instance().post(msg)
 
-    def sendTo(self, target, data):
+    def sendTo(self, target, data, type="ASYNC"):
         self.inc_clock()
-        msg = TargetMessage(self.myId, target, data)
+        msg = TargetMessage(self.myId, target, data, type)
 
         msg.setClock(self.clock)
         self.log(f"SEND {msg}")
         PyBus.Instance().post(msg)
+
+    #############################
+    ##   COMMUNICATION - SYNC  ##
+    #############################
+
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=Acknowledge)
+    def onAcknowledge(self, event: Acknowledge):
+        if not event.isForMe(self.myId):
+            return
+
+        self.log(f"RECEIVED {event}")
+        self.inc_clock(event.getClock())
+        self.syncAknowledgement.append(event.sender)
+
+    def sendAcknowledge(self, target):
+        ack = Acknowledge(self.myId, target)
+        ack.setClock(self.clock)
+        self.log(f"SEND {ack}")
+        PyBus.Instance().post(ack)
+
+    def broadcastSync(self, data):
+        self.broadcast(data, "SYNC")
+
+        # we wait until everyone has received the message
+        while len(self.syncAknowledgement) != self.nbProcess-1:
+            sleep(0.1)
+            self.log(
+                f"Waiting for {self.nbProcess-1-len(self.syncAknowledgement)} aknowledgements")
+
+        self.syncAknowledgement = []
+        self.log("Everyone received the broadcast")
+
+    def sendToSync(self, target, data):
+        self.sendTo(target, data, "SYNC")
+
+        # we wait until the target has received the message
+        while target not in self.syncAknowledgement:
+            sleep(0.1)
+            self.log(
+                f"Waiting for <{target}> aknowledgements")
+
+        self.syncAknowledgement = []
+        self.log(f"Target <{target}> received the message")
+
+    def getLastSyncMessage(self):
+        # return last message that has type "SYNC" in the inbox
+        for i in range(len(self.inbox)-1, -1, -1):
+            msg = self.inbox[i]
+            if (msg.type == "SYNC"):
+                return msg
+        return None
+
+    def recevFromSync(self, fromId):
+        lastSyncMessage = self.getLastSyncMessage()
+        while lastSyncMessage == None or lastSyncMessage.sender != fromId:
+            sleep(0.2)
+            self.log(f"Waiting for a message from {fromId}")
+            lastSyncMessage = self.getLastSyncMessage()
+
+        self.log(f"Received a message from {fromId}")
+        self.sendAcknowledge(fromId)

@@ -3,8 +3,8 @@ from messages.Message import Message
 
 class TargetMessage(Message):
 
-    def __init__(self, sender, target, content=None):
-        super().__init__(sender, content)
+    def __init__(self, sender, target, content=None, type="ASYNC"):
+        super().__init__(sender, content, type)
         self.target = target
 
     def getTarget(self):

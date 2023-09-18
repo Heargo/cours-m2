@@ -1,9 +1,10 @@
 class Message():
 
-    def __init__(self, sender, content=None):
+    def __init__(self, sender, content=None, type="ASYNC"):
         self.sender = sender
         self.content = content
         self.clock = 0
+        self.type = type
 
     def getContent(self):
         return self.content
