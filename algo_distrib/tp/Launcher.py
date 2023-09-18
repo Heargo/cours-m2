@@ -9,7 +9,7 @@ if __name__ == '__main__':
     p2 = Process("P2")
     p3 = Process("P3")
 
-    sleep(5)
+    sleep(15)
 
     p1.stop()
     p2.stop()

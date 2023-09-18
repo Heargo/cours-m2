@@ -1,8 +1,7 @@
-from threading import Thread
-
+from threading import Thread, Semaphore
+from pyeventbus3.pyeventbus3 import *
 from time import sleep
 
-from Bidule import Bidule
 from messages.Message import Message
 from messages.BroadcastMessage import BroadcastMessage
 from messages.TargetMessage import TargetMessage
@@ -10,28 +9,23 @@ from messages.Token import Token
 from messages.Sync import Sync
 from messages.Stop import Stop
 
-from pyeventbus3.pyeventbus3 import *
 
+class Com(Thread):
 
-class Process(Thread):
-    nbProcess = 0
-
-    def __init__(self, name):
+    def __init__(self, myId, nbProcess):
         Thread.__init__(self)
-
-        self.myId = Process.nbProcess
-        Process.nbProcess += 1
-        self.setName(name)
         PyBus.Instance().register(self, self)
+
+        self.myId = myId
+        self.nbProcess = nbProcess
+
         # Lamport clock
+        self.clockSem = Semaphore()
         self.clock = 0
         # synchronization. Choose to use two boolean to make the conditions easier to read and understand
         self.tokenPossessed = False
         self.needToken = False
-        # list of processes that are synchronizing (being in the list means that the process is waiting)
         self.synchronizingProcesses = []
-        # list of processes that are stopped (being in the list means that the process is stopped)
-        # this is used to avoid waiting for a stopped process to synchronize
         self.stoppedProcesses = []
 
         # state. If alive, the process is running.
@@ -44,12 +38,14 @@ class Process(Thread):
     ###### GENERAL METHODS ######
     #############################
 
-    def incrementClock(self, externalClock=0):
+    def inc_clock(self, externalClock=0):
+        self.clockSem.acquire()
         self.clock = max(self.clock, externalClock)+1
+        self.clockSem.release()
 
     def log(self, msg):
         print(
-            f"[{'LIVE' if self.alive else 'ZOMB' if not self.dead else 'DEAD'}] [{self.clock}] node <{self.myId}>: {msg}", flush=True)
+            f"\tCOM<{self.myId}> [{'LIVE' if self.alive else 'ZOMB' if not self.dead else 'DEAD'}] [{self.clock}] : {msg}", flush=True)
 
     #############################
     ###### SYNCHRONIZATION ######
@@ -88,7 +84,7 @@ class Process(Thread):
         if len(self.synchronizingProcesses) == 0:
             return True
 
-        for i in range(Process.nbProcess):
+        for i in range(self.nbProcess):
             if i not in self.synchronizingProcesses and i not in self.stoppedProcesses:
                 return False
         return True
@@ -100,9 +96,18 @@ class Process(Thread):
         PyBus.Instance().post(sync)
 
         # we wait until the synchronization is done
-        while not self.isAllProcessSynchonized():
+        while (self.myId in self.synchronizingProcesses):
             sleep(0.5)
             self.log(f"Process {self.myId} is synchronizing")
+
+    def stop(self):
+        self.alive = False
+        self.synchronizingProcesses = []
+        self.log(f"Process {self.myId} is stopping")
+        stop = Stop(self.myId)
+        PyBus.Instance().post(stop)
+        self.join()
+        self.log("coms are dead")
 
     #############################
     ######     TOKEN      #######
@@ -125,21 +130,22 @@ class Process(Thread):
         if not self.alive:
             return
 
-        nextProcess = (self.myId+1) % Process.nbProcess
+        nextProcess = (self.myId+1) % self.nbProcess
         token = Token(self.myId, nextProcess)
-        self.tokenPossessed = False
         self.log(f"SEND {token}")
+        self.tokenPossessed = False
         PyBus.Instance().post(token)
 
-    def requestToken(self):
+    def requestSC(self):
         self.needToken = True
 
         while not self.tokenPossessed:
             sleep(0.1)
             if (not self.alive):
                 raise Exception("I'm dying")
+        self.log("I have the token now, I'm gonna use it for a while")
 
-    def releaseToken(self):
+    def releaseSC(self):
         self.needToken = False
         self.sendToken()
 
@@ -149,7 +155,7 @@ class Process(Thread):
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=Message)
     def onMessage(self, event: Message):
-        self.incrementClock(event.getClock())
+        self.inc_clock(event.getClock())
         self.log(f"RECEIVED {event}")
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=BroadcastMessage)
@@ -157,7 +163,7 @@ class Process(Thread):
         if event.isFromMe(self.myId):
             return
 
-        self.incrementClock(event.getClock())
+        self.inc_clock(event.getClock())
         self.log(f"RECEIVED {event}")
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=TargetMessage)
@@ -165,11 +171,11 @@ class Process(Thread):
         if not event.isForMe(self.myId):
             return
 
-        self.incrementClock(event.getClock())
+        self.inc_clock(event.getClock())
         self.log(f"RECEIVED {event}")
 
     def send(self, data):
-        self.incrementClock()
+        self.inc_clock()
         msg = Message(self.myId, data)
 
         msg.setClock(self.clock)
@@ -177,7 +183,7 @@ class Process(Thread):
         PyBus.Instance().post(msg)
 
     def broadcast(self, data):
-        self.incrementClock()
+        self.inc_clock()
         msg = BroadcastMessage(self.myId, data)
 
         msg.setClock(self.clock)
@@ -185,93 +191,9 @@ class Process(Thread):
         PyBus.Instance().post(msg)
 
     def sendTo(self, target, data):
-        self.incrementClock()
+        self.inc_clock()
         msg = TargetMessage(self.myId, target, data)
 
         msg.setClock(self.clock)
         self.log(f"SEND {msg}")
         PyBus.Instance().post(msg)
-
-    #############################
-    ######      RUN       #######
-    #############################
-
-    def run(self):
-        loop = 0
-        while self.alive:
-
-            self.log(f"Loop: {loop}")
-            sleep(1)
-
-            if (self.myId == Process.nbProcess-1 and loop == 0):
-                self.log("I'm the last process, I'm starting to send the token")
-                self.sendToken()
-
-            if self.getName() == "P1":
-                b1 = Bidule("message normal")
-                b2 = Bidule("message broadcast")
-                b3 = Bidule("message target")
-
-                if (loop == 1):
-                    self.send(b1)
-                    self.broadcast(b2)
-                    self.sendTo(2, b3)
-                    self.synchronize()
-
-                # test access to critical section
-                if (loop == 2):
-                    self.log("WARNING I'm gonna request the token")
-                    try:
-                        self.requestToken()
-                        self.log(
-                            "I have the token I'm gonna use it for a while")
-                        sleep(2)
-                        self.log("I'm done, I'll release the token")
-                        self.releaseToken()
-                    except:
-                        self.log("I'm can't use the token since I'm dying")
-
-            if self.getName() == "P2":
-                self.log("I'm gonna sleep for 1 second")
-                sleep(1)
-                self.log("I'm done sleeping, I'm gonna synchronize")
-                if (loop == 1):
-                    self.synchronize()
-
-                # test access to critical section
-                if (loop == 2):
-                    try:
-                        self.requestToken()
-                        self.log(
-                            "I have the token I'm gonna use it for a while")
-                        sleep(2)
-                        self.log("I'm done, I'll release the token")
-                        self.releaseToken()
-                    except:
-                        self.log("I'm can't use the token since I'm dying")
-
-            if (self.getName() == "P3"):
-                try:
-                    self.requestToken()
-                    self.log("I have the token I'm gonna use it for a while")
-                    sleep(2)
-                    self.log("I'm done, I'll release the token")
-                    self.releaseToken()
-                except:
-                    self.log("I'm can't use the token since I'm dying")
-
-                if (loop == 1):
-                    self.synchronize()
-
-            loop += 1
-
-        self.dead = True
-
-    def stop(self):
-        self.alive = False
-        self.synchronizingProcesses = []
-        self.log(f"Process {self.myId} is stopping")
-        stop = Stop(self.myId)
-        PyBus.Instance().post(stop)
-        self.join()
-        self.log("TERMINATED")
