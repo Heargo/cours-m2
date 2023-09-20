@@ -54,45 +54,46 @@ class Process(Thread):
                 self.log("I'm the last process, I'm starting to send the token")
                 self.com.sendToken()
 
+            # self.test_async_messages_and_synchro(loop)
+            # self.test_section_critique(loop)
+            # self.test_sync_messages(loop)
+            self.test_all(loop)
+
+            loop += 1
+
+        self.dead = True
+
+    def test_async_messages_and_synchro(self, loop):
+
+        if (loop == 1):
+            self.com.broadcastSync(0, "message broadcast")
+
+        if self.getName() == "P0":
+
             if (loop == 1):
-                b2 = Bidule("message broadcast")
-                self.com.broadcastSync(0, b2)
+                self.com.broadcast("broadcast info to all")
+                self.com.sendTo(2, "dm to id 2")
+                self.com.synchronize()
 
-            if self.getName() == "P0":
+        if self.getName() == "P1":
+            self.log("I'm gonna sleep for 1 second")
+            sleep(1)
+            self.log("I'm done sleeping")
+            if (loop == 1):
+                self.com.synchronize()
 
-                if (loop == 1):
-                    b1 = Bidule("message normal")
-                    b3 = Bidule("message target")
+        if (self.getName() == "P2"):
+            if (loop == 1):
+                self.com.synchronize()
 
-                    self.com.broadcast(b1)
-                    # sleep is here to avoid the message to be sent before the receiver is ready
-                    # TODO: fix negative aknowledgements when having sendtosync and broadcast sync
-                    # sleep(1)
-                    # self.com.sendToSync(1, b3)
-                    # self.com.sendTo(2, b3)
-                    self.com.synchronize()
+            self.log("I'm doing something for 2 seconds")
+            sleep(2)
+            self.log("I'm done doing something")
 
-                if (loop == 2):
-                    try:
-                        self.com.requestSC()
-                        self.log("using the token")
-                        sleep(2)
-                        self.log("I'm done, I'll release the token")
-                        self.com.releaseSC()
-                    except:
-                        self.log(
-                            "I'm can't access the critical section since I'm dying")
+    def test_section_critique(self, loop):
 
-            if self.getName() == "P1":
-                # self.com.recevFromSync(0)
-                self.log("I'm gonna sleep for 1 second")
-                sleep(1)
-                self.log("I'm done sleeping")
-
-                if (loop == 1):
-                    self.com.synchronize()
-
-            if (self.getName() == "P2"):
+        if self.getName() == "P0":
+            if (loop == 2):
                 try:
                     self.com.requestSC()
                     self.log("using the token")
@@ -103,9 +104,80 @@ class Process(Thread):
                     self.log(
                         "I'm can't access the critical section since I'm dying")
 
-                if (loop == 1):
-                    self.com.synchronize()
+        if (self.getName() == "P2"):
+            try:
+                self.com.requestSC()
+                self.log("using the token")
+                sleep(2)
+                self.log("I'm done, I'll release the token")
+                self.com.releaseSC()
+            except:
+                self.log(
+                    "I'm can't access the critical section since I'm dying")
 
-            loop += 1
+    def test_sync_messages(self, loop):
+        if (loop == 1):
+            self.com.broadcastSync(0, "message broadcast")
 
-        self.dead = True
+        if self.getName() == "P0":
+            if (loop == 1):
+                # sleep is here to avoid the message to be sent before the receiver is ready
+                sleep(1)
+                self.com.sendToSync(1, "sending sync dm to 1")
+
+        if self.getName() == "P1":
+            if (loop == 1):
+                self.com.recevFromSync(0)
+
+            self.log("I'm gonna sleep for 1 second")
+            sleep(1)
+            self.log("I'm done sleeping")
+
+    def test_all(self, loop):
+        if (loop == 1):
+            self.com.broadcastSync(0, "message broadcast")
+
+        if self.getName() == "P0":
+
+            if (loop == 1):
+                self.com.broadcast("broadcast info to all")
+                # sleep is here to avoid the message to be sent before the receiver is ready
+                sleep(1)
+                self.com.sendToSync(1, "sending sync dm to P1")
+                self.com.sendTo(2, "dm async to P2")
+                self.com.synchronize()
+
+            if (loop == 2):
+                try:
+                    self.com.requestSC()
+                    self.log("using the token")
+                    sleep(2)
+                    self.log("I'm done, I'll release the token")
+                    self.com.releaseSC()
+                except:
+                    self.log(
+                        "I'm can't access the critical section since I'm dying")
+
+        if self.getName() == "P1":
+            if (loop == 1):
+                self.com.recevFromSync(0)
+            self.log("I'm gonna sleep for 1 second")
+            sleep(1)
+            self.log("I'm done sleeping")
+
+            if (loop == 1):
+                self.com.synchronize()
+
+        if (self.getName() == "P2"):
+            try:
+                self.com.requestSC()
+                self.log("using the token")
+                sleep(2)
+                self.log("I'm done, I'll release the token")
+                self.com.releaseSC()
+            except:
+                self.log(
+                    "I'm can't access the critical section since I'm dying")
+
+            if (loop == 1):
+                self.com.synchronize()

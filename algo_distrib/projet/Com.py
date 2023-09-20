@@ -28,18 +28,24 @@ class Com(Thread):
         self.needToken = False
         self.synchronizingProcesses = []
         self.stoppedProcesses = []
-
         # inbox
         self.inbox = []
-
-        # sync aknowledgement
+        # sync aknowledgement list
         self.syncAknowledgement = []
+        # keep track of already acknowledged messages to avoid sending multiple aknowledgements for the same message
+        self.alreadyAcknowledged = []
 
         # state. If alive, the process is running.
         # If dead, the process is stopped if not alive and not dead, the process is being killed (zombie)
         self.alive = True
         self.dead = False
         self.start()
+
+    #############################
+    ######  DYNAMIC ID    #######
+    #############################
+
+    # TODO
 
     #############################
     ###### GENERAL METHODS ######
@@ -191,6 +197,7 @@ class Com(Thread):
         msg.setClock(self.clock)
         self.log(f"SEND {msg}")
         PyBus.Instance().post(msg)
+        return msg.getId()
 
     def broadcast(self, data, type="ASYNC"):
         self.inc_clock()
@@ -199,6 +206,7 @@ class Com(Thread):
         msg.setClock(self.clock)
         self.log(f"BROADCAST {msg}")
         PyBus.Instance().post(msg)
+        return msg.getId()
 
     def sendTo(self, target, data, type="ASYNC"):
         self.inc_clock()
@@ -207,6 +215,7 @@ class Com(Thread):
         msg.setClock(self.clock)
         self.log(f"SEND {msg}")
         PyBus.Instance().post(msg)
+        return msg.getId()
 
     #############################
     ##   COMMUNICATION - SYNC  ##
@@ -219,23 +228,31 @@ class Com(Thread):
 
         self.log(f"RECEIVED {event}")
         self.inc_clock(event.getClock())
-        self.syncAknowledgement.append(event.sender)
+        self.syncAknowledgement.append(event)
 
-    def sendAcknowledge(self, target):
-        ack = Acknowledge(self.myId, target)
+    def sendAcknowledge(self, target, id):
+        ack = Acknowledge(self.myId, target, id)
         ack.setClock(self.clock)
         self.log(f"SEND {ack}")
         PyBus.Instance().post(ack)
+        self.alreadyAcknowledged.append(id)
+
+    def hasNAknowledgementForId(self, id, n=1):
+        count = 0
+        for ackMsg in self.syncAknowledgement:
+            if ackMsg.getContent() == id:
+                count += 1
+        # self.log(f"hasNAknowledgementForId <id={id},n={n}> ? {count >= n}")
+        return count >= n
 
     def broadcastSync(self, fromId, data):
-
         if (self.myId == fromId):
-            self.broadcast(data, "SYNC")
+            msgId = self.broadcast(data, "SYNC")
             # we wait until everyone has received the message
-            while len(self.syncAknowledgement) != self.nbProcess-1:
+            while not self.hasNAknowledgementForId(msgId, self.nbProcess-1):
                 sleep(0.1)
-                self.log(
-                    f"Waiting for {self.nbProcess-1-len(self.syncAknowledgement)} aknowledgements")
+                # self.log(
+                #     f"Waiting for aknowledgements for message {msgId}")
 
             self.syncAknowledgement = []
             self.log("Everyone received the broadcast")
@@ -243,10 +260,10 @@ class Com(Thread):
             self.recevFromSync(fromId)
 
     def sendToSync(self, target, data):
-        self.sendTo(target, data, "SYNC")
+        msgId = self.sendTo(target, data, "SYNC")
 
         # we wait until the target has received the message
-        while target not in self.syncAknowledgement:
+        while not self.hasNAknowledgementForId(msgId, 1):
             sleep(0.1)
             self.log(
                 f"Waiting for <{target}> aknowledgements")
@@ -254,20 +271,20 @@ class Com(Thread):
         self.syncAknowledgement = []
         self.log(f"Target <{target}> received the message")
 
-    def getLastSyncMessage(self):
-        # return last message that has type "SYNC" in the inbox
+    def getLastPendingSyncMessage(self):
+        # return last message that has type "SYNC" in the inbox and that has not been acknowledged yet
         for i in range(len(self.inbox)-1, -1, -1):
             msg = self.inbox[i]
-            if (msg.type == "SYNC"):
+            if (msg.type == "SYNC" and msg.getId() not in self.alreadyAcknowledged):
                 return msg
         return None
 
     def recevFromSync(self, fromId):
-        lastSyncMessage = self.getLastSyncMessage()
+        lastSyncMessage = self.getLastPendingSyncMessage()
         while lastSyncMessage == None or lastSyncMessage.sender != fromId:
             sleep(0.2)
             self.log(f"Waiting for a message from {fromId}")
-            lastSyncMessage = self.getLastSyncMessage()
+            lastSyncMessage = self.getLastPendingSyncMessage()
 
-        self.log(f"Received a message from {fromId}")
-        self.sendAcknowledge(fromId)
+        self.log(f"Received message {lastSyncMessage} from {fromId}")
+        self.sendAcknowledge(fromId, lastSyncMessage.getId())
