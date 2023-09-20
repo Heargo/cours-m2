@@ -1,6 +1,7 @@
 from threading import Thread, Semaphore
 from pyeventbus3.pyeventbus3 import *
 from time import sleep
+import uuid
 
 from messages.Message import Message
 from messages.BroadcastMessage import BroadcastMessage
@@ -9,27 +10,39 @@ from messages.Token import Token
 from messages.Sync import Sync
 from messages.Stop import Stop
 from messages.Acknowledge import Acknowledge
+from messages.Connect import Connect
+from messages.ConnectConfirmation import ConnectConfirmation
 
 
 class Com(Thread):
 
-    def __init__(self, myId, nbProcess):
+    def __init__(self, nbProcess):
         Thread.__init__(self)
         PyBus.Instance().register(self, self)
 
-        self.myId = myId
         self.nbProcess = nbProcess
+
+        # dynamic id
+        self.uniqueUUID = uuid.uuid4()
+        self.lastAttributedId = 0
+        self.myId = None
+        self.confirmedId = False
+        self.pendingConnect = []
+        self.idDict = {}  # key: uuid, value: {id:int,leader:bool}
 
         # Lamport clock
         self.clockSem = Semaphore()
         self.clock = 0
+
         # synchronization. Choose to use two boolean to make the conditions easier to read and understand
         self.tokenPossessed = False
         self.needToken = False
         self.synchronizingProcesses = []
         self.stoppedProcesses = []
+
         # inbox
         self.inbox = []
+
         # sync aknowledgement list
         self.syncAknowledgement = []
         # keep track of already acknowledged messages to avoid sending multiple aknowledgements for the same message
@@ -39,13 +52,83 @@ class Com(Thread):
         # If dead, the process is stopped if not alive and not dead, the process is being killed (zombie)
         self.alive = True
         self.dead = False
+
         self.start()
+        self._connect()
 
     #############################
     ######  DYNAMIC ID    #######
     #############################
 
-    # TODO
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=ConnectConfirmation)
+    def onConnectConfirmation(self, event: ConnectConfirmation):
+        # remove from pending connect
+        for pc in self.pendingConnect:
+            if pc.getSender() == event.getTarget():
+                self.pendingConnect.remove(pc)
+                break
+
+        if (event.isForMe(self.uniqueUUID)):
+            self.log(
+                f"Process {event.getSender()} has confirmed my id {event.getContent()}")
+            self.myId = int(event.getContent())
+
+        # add to id dict
+        self.idDict[event.getSender()] = {
+            "id": event.getContent(), "leader": event.getContent() == 0}
+
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=Connect)
+    def onConnect(self, event: Connect):
+        # only take care of this if I'm the process 0
+        self.pendingConnect.append(event)
+        if (self._getLeader() != self.uniqueUUID):
+            self.log(
+                f"CANNOT take care of {event} because I'm not the leader ({self._getLeader()}!={self.uniqueUUID})")
+            return
+
+        # as I'm the first process I can attribute a new one
+
+        self.lastAttributedId += 1
+        self.log(
+            f"Process {event.getSender()} want id {event.getContent()}. I don't care, I'm gonna give him a new one ({self.lastAttributedId})")
+        connConfirm = ConnectConfirmation(
+            self.uniqueUUID, event.getSender(), self.lastAttributedId)
+        PyBus.Instance().post(connConfirm)
+        self.log(f"SEND {connConfirm} to {event.getSender()}")
+
+    def _connect(self):
+        self.log(
+            f"I'm connecting to the network with unique id {self.uniqueUUID}. I want id 0")
+        conn = Connect(self.uniqueUUID, 0)
+        PyBus.Instance().post(conn)
+
+    def _getLeader(self):
+        self.log(f"Getting leader{self.idDict}")
+        for uuid, idDict in self.idDict.items():
+            if idDict["leader"]:
+                return uuid
+        return None
+
+    def getId(self):
+        # wait 1 sec or until someone corrected the id
+        t = 0
+        while (not self.confirmedId and (t < 10 or self._getLeader() != None)):
+            sleep(0.1)
+            t += 1
+        # if no one corrected the id, we consider that I'm the first process and confirm it
+        if (not self.confirmedId):
+            connConfirm = ConnectConfirmation(
+                self.uniqueUUID, self.uniqueUUID, self.lastAttributedId)
+            PyBus.Instance().post(connConfirm)
+            self.log(f"SEND {connConfirm} to {self.uniqueUUID}")
+
+            # take care of pending connect
+            self.log(
+                f"Taking care of pending connect ({len(self.pendingConnect)})")
+            for connect in self.pendingConnect:
+                self.onConnect(connect)
+
+        return self.myId
 
     #############################
     ###### GENERAL METHODS ######
@@ -58,7 +141,7 @@ class Com(Thread):
 
     def log(self, msg):
         print(
-            f"\tCOM<{self.myId}> [{'LIVE' if self.alive else 'ZOMB' if not self.dead else 'DEAD'}] [{self.clock}] : {msg}", flush=True)
+            f"\tCOM<{self.myId}> {'OFFICIAL'if self.confirmedId else ''} [{'LIVE' if self.alive else 'ZOMB' if not self.dead else 'DEAD'}] [{self.clock}] : {msg}", flush=True)
 
     #############################
     ###### SYNCHRONIZATION ######

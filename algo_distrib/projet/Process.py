@@ -7,7 +7,6 @@ from time import sleep
 # from geeteventbus.event import event
 
 # from EventBus import EventBus
-from Bidule import Bidule
 from Com import Com
 
 from pyeventbus3.pyeventbus3 import *
@@ -15,16 +14,16 @@ from pyeventbus3.pyeventbus3 import *
 
 class Process(Thread):
 
-    def __init__(self, name, id, nbProcess):
+    def __init__(self, name, nbProcess):
         Thread.__init__(self)
 
-        self.myId = id
         self.setName(name)
         self.nbProcess = nbProcess
         self.alive = True
         self.dead = False
 
-        self.com = Com(self.myId, nbProcess)
+        self.com = Com(nbProcess)
+        self.myId = self.com.getId()
         self.start()
 
     def log(self, msg):
