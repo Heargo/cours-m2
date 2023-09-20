@@ -68,14 +68,16 @@ class Com(Thread):
                 self.pendingConnect.remove(pc)
                 break
 
-        if (event.isForMe(self.uniqueUUID)):
+        if (event.isForMe(self.uniqueUUID) and not self.confirmedId):
             self.log(
                 f"Process {event.getSender()} has confirmed my id {event.getContent()}")
             self.myId = int(event.getContent())
+            self.confirmedId = True
 
         # add to id dict
-        self.idDict[event.getSender()] = {
+        self.idDict[event.getTarget()] = {
             "id": event.getContent(), "leader": event.getContent() == 0}
+        self.log(f"DICT {self.idDict}")
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=Connect)
     def onConnect(self, event: Connect):
@@ -103,7 +105,7 @@ class Com(Thread):
         PyBus.Instance().post(conn)
 
     def _getLeader(self):
-        self.log(f"Getting leader{self.idDict}")
+        # self.log(f"Getting leader{self.idDict}")
         for uuid, idDict in self.idDict.items():
             if idDict["leader"]:
                 return uuid
