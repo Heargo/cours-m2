@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
     procs = []
     for i in range(nbProcess):
-        procs.append(Process(f"P{i}", i, nbProcess))
+        procs.append(Process(f"P{i}", nbProcess))
         print("process", i, "created")
 
     sleep(15)
