@@ -23,7 +23,7 @@ class Process(Thread):
         self.dead = False
 
         self.com = Com(nbProcess)
-        self.myId = self.com.getId()
+        self.myId = None
         self.start()
 
     def log(self, msg):
@@ -45,6 +45,7 @@ class Process(Thread):
 
     def run(self):
         loop = 0
+        self.myId = self.com.getId()
         while self.alive:
             self.log(f"Loop: {loop}")
             sleep(1)
