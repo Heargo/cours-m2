@@ -537,6 +537,7 @@ class Com(Thread):
 
         :param fromId: The `fromId` parameter represents the ID of the sender from whom the message is
         expected to be received
+        :return: The method returns the message that was received from the specified process.
         """
         lastSyncMessage = self.getLastPendingSyncMessage()
         while lastSyncMessage == None or lastSyncMessage.sender != fromId:
@@ -546,6 +547,8 @@ class Com(Thread):
 
         self.log(f"Received message {lastSyncMessage} from {fromId}")
         self._sendAcknowledge(fromId, lastSyncMessage.getId())
+
+        return lastSyncMessage
 
     #############################
     ######    HEARTBIT    #######

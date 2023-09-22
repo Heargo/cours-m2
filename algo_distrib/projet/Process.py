@@ -24,7 +24,7 @@ class Process(Thread):
         self.alive = True
         self.dead = False
 
-        self.com = Com(nbProcess, showLogs=False)
+        self.com = Com(nbProcess, showLogs=True)
         self.myId = None
         self.start()
 
@@ -32,7 +32,6 @@ class Process(Thread):
         self.drinkedBeers = []
 
     def log(self, msg):
-
         print(
             f"PRO<{self.name} | {self.myId}> [{'LIVE' if self.alive else 'ZOMB' if not self.dead else 'DEAD'}] {msg}", flush=True)
 
@@ -43,10 +42,10 @@ class Process(Thread):
     def stop(self):
         self.alive = False
         self.synchronizingProcesses = []
-        self.log(f"I'm tired, I'm leaving the party, bye bye")
+        self.log(f"I'm gonna stop")
         self.com.stop()
         self.join()
-        self.log("left the party")
+        self.log("Terminated")
 
     def run(self):
         loop = 0
@@ -62,8 +61,8 @@ class Process(Thread):
             # self.test_async_messages_and_synchro(loop)
             # self.test_section_critique(loop)
             # self.test_sync_messages(loop)
-            # self.test_all(loop)
-            self.test_demo(loop)
+            self.test_all(loop)
+            # self.test_demo(loop)
 
             loop += 1
 

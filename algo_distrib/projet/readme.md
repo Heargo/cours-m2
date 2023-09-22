@@ -137,6 +137,10 @@ To use the `Com` API for inter-process communication and synchronization, follow
 
 ## Technicals decisions
 
+### Synchronous Message
+
+I choose to store the synchronous messages in the inbox as well. This way if the process start to wait for a synchronous message, it will not wait forever if the message was received just before. While waiting for the synchronous message, the process will check the inbox to see if the last synchronous message was sent by the expected process.
+
 ### Token Algorithm
 
 he token is passed from process to process in a ring topology. I chose this topology because it is the simplest to implement and it's efficient.
