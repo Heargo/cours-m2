@@ -13,6 +13,7 @@ from messages.Stop import Stop
 from messages.Acknowledge import Acknowledge
 from messages.Connect import Connect
 from messages.ConnectConfirmation import ConnectConfirmation
+from messages.Heartbit import Heartbit
 
 
 class Com(Thread):
@@ -24,11 +25,16 @@ class Com(Thread):
         self.nbProcess = nbProcess
 
         # dynamic id
-        # this id is only used during the connection phase. Once the myId is confirmed, this id is not used anymore
+        # this id is only used during the connection phase. Once the myId is confirmed, this id is not used anymore except for heartbit
         self.uniqueUUID = uuid.uuid4()
         self.myId = None
         self.confirmedId = False
         self.idDict = {}  # key: uuid, value: int
+
+        # heartbit
+        self.lastHeartbit = {}  # key: uuid, value: timestamp
+        self.heartbitThread = Thread(target=self._hearbit)
+        self.verifHeartBitThread = Thread(target=self._verifyHearbit)
 
         # Lamport clock
         self.clockSem = Semaphore()
@@ -56,6 +62,14 @@ class Com(Thread):
         self.start()
         self._connect()  # connect to the network and get an id
 
+    def _initBackgroundTasks(self):
+        """
+        The function initializes the background tasks that are running in parallel to the main thread. 
+        The background tasks are the heartbit and the verification of the heartbit.
+        """
+        self.heartbitThread.start()
+        self.verifHeartBitThread.start()
+
     #############################
     ######  DYNAMIC ID    #######
     #############################
@@ -72,6 +86,7 @@ class Com(Thread):
         self.idDict = event.getContent()
         self.myId = self.idDict[self.uniqueUUID]
         self.confirmedId = True
+        self.log(f"Confirmed id: {self.myId}")
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=Connect)
     def _onConnect(self, event: Connect):
@@ -119,6 +134,9 @@ class Com(Thread):
         # wait until id is confirmed
         while (not self.confirmedId):
             sleep(0.1)
+
+        self._initBackgroundTasks()
+
         return self.myId
 
     #############################
@@ -167,7 +185,7 @@ class Com(Thread):
         :type event: Stop
         """
         stoppedProc = event.getSender()
-        if (stoppedProc == self.myId):
+        if (stoppedProc == self.uniqueUUID):
             self.log("I'm stopping")
             self.alive = False
             self.synchronizingProcesses = []
@@ -192,8 +210,10 @@ class Com(Thread):
         synchronization event that has occurred
         :type event: Sync
         """
-        if event.getSender() not in self.synchronizingProcesses:
-            self.synchronizingProcesses.append(event.getSender())
+        # get uuid from str
+        senderUUID = event.getSender()
+        if senderUUID not in self.synchronizingProcesses:
+            self.synchronizingProcesses.append(senderUUID)
 
         if self._isAllProcessSynchonized() and self.alive:
             self.log("The last process has synchronized, I'm starting again")
@@ -209,8 +229,8 @@ class Com(Thread):
         if len(self.synchronizingProcesses) == 0:
             return True
 
-        for i in range(self.nbProcess):
-            if i not in self.synchronizingProcesses and i not in self.stoppedProcesses:
+        for uuidProc in self.idDict.keys():
+            if uuidProc not in self.synchronizingProcesses and uuidProc not in self.stoppedProcesses:
                 return False
         return True
 
@@ -220,14 +240,15 @@ class Com(Thread):
         This function is blocking.
         """
         self.log(f"SYNCHRONIZING")
-        sync = Sync(self.myId)
-        self.synchronizingProcesses.append(self.myId)
+        sync = Sync(self.uniqueUUID)
+        self.synchronizingProcesses.append(self.uniqueUUID)
         PyBus.Instance().post(sync)
 
         # we wait until the synchronization is done
-        while (self.myId in self.synchronizingProcesses):
+        while (self.uniqueUUID in self.synchronizingProcesses):
             sleep(0.5)
-            self.log(f"Process {self.myId} is synchronizing")
+            self.log(
+                f"Process {self.myId}| {self.uniqueUUID} is synchronizing ")
 
     def stop(self):
         """
@@ -519,3 +540,40 @@ class Com(Thread):
 
         self.log(f"Received message {lastSyncMessage} from {fromId}")
         self._sendAcknowledge(fromId, lastSyncMessage.getId())
+
+    #############################
+    ######    HEARTBIT    #######
+    #############################
+
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=Heartbit)
+    def _onHearbit(self, event: Heartbit):
+        """
+        Handles the reception of a heartbit message by updating the last heartbit timestamp.
+
+        :param event: The parameter "event" is of type Heartbit
+        :type event: Heartbit
+        """
+        self.lastHeartbit[event.getSender()] = time.time()
+        pass
+
+    def _hearbit(self):
+        """
+        The function sends a hearbit message to all processes. This function is called every 1 seconds.
+        """
+        while self.alive:
+            self.log("Sending hearbit: I'm please don't forget me ")
+            heartbit = Heartbit(self.uniqueUUID)
+            PyBus.Instance().post(heartbit)
+            sleep(1)
+
+    def _verifyHearbit(self):
+        """
+        The function verifies a process stopped to live. This function is called every 1 seconds.
+        """
+        while self.alive:
+            for uuid in self.lastHeartbit.keys():
+                if (time.time() - self.lastHeartbit[uuid] > 5 and uuid not in self.stoppedProcesses):
+                    self.log(
+                        f"Process {uuid} is probably dead and didn't warned")
+                    self._onStop(Stop(uuid))
+            sleep(1)
