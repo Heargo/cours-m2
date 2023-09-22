@@ -141,7 +141,7 @@ To use the `Com` API for inter-process communication and synchronization, follow
 
 he token is passed from process to process in a ring topology. I chose this topology because it is the simplest to implement and it's efficient.
 
-For the implementation, I chose to release the token after 100ms if the process does not need it. I chose to wait 100ms to avoid having too many messages in the system.
+For the implementation, I chose to release the token after 300ms if the process does not need it. I chose to wait 300ms to avoid having too many messages in the system.
 
 I also chose to use to variables instead of a single variable with 4 state to manage the token. I chose this solution because it is easier to read. The variables are `tokenPossessed` and `needToken` both are boolean.
 

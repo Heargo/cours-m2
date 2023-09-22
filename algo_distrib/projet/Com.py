@@ -18,11 +18,12 @@ from messages.Heartbit import Heartbit
 
 class Com(Thread):
 
-    def __init__(self, nbProcess):
+    def __init__(self, nbProcess, showLogs=False):
         Thread.__init__(self)
         PyBus.Instance().register(self, self)
 
         self.nbProcess = nbProcess
+        self.showLogs = showLogs
 
         # dynamic id
         # this id is only used during the connection phase. Once the myId is confirmed, this id is not used anymore except for heartbit
@@ -169,6 +170,9 @@ class Com(Thread):
 
         :param msg: The `msg` parameter is a string that represents the message to be logged
         """
+        if (not self.showLogs):
+            return
+
         print(
             f"\tCOM<{self.myId if self.confirmedId else self.uniqueUUID}> {'OFFICIAL'if self.confirmedId else ''} [{'LIVE' if self.alive else 'ZOMB' if not self.dead else 'DEAD'}] [{self.clock}] : {msg}", flush=True)
 
@@ -270,7 +274,7 @@ class Com(Thread):
     def _onToken(self, event: Token):
         """
         Handle token reception. If meant for the current instance, sets a flag to indicate
-        possession of the token, and sends the token if it is not needed after 100ms.
+        possession of the token, and sends the token if it is not needed after 300ms.
 
         :param event: The token message received from the bus
         :type event: Token
@@ -279,12 +283,11 @@ class Com(Thread):
         if not event.isForMe(self.myId):
             return
 
-        # self.log(f"RECEIVED token from {event.sender}")
+        self.log(f"RECEIVED token from {event.sender}")
         self.tokenPossessed = True
-
+        sleep(0.3)
         if not self.needToken:
-            sleep(0.1)
-            # self.log("I don't need the token, I'm gonna send it")
+            self.log("I don't need the token, I'm gonna send it")
             self.sendToken()
 
     def sendToken(self):
@@ -298,7 +301,7 @@ class Com(Thread):
 
         nextProcess = (self.myId+1) % self.nbProcess
         token = Token(self.myId, nextProcess)
-        # self.log(f"SEND {token}")
+        self.log(f"SEND {token}")
         self.tokenPossessed = False
         PyBus.Instance().post(token)
 
@@ -513,7 +516,7 @@ class Com(Thread):
         self.syncAknowledgement = []
         self.log(f"Target <{target}> received the message")
 
-    def _getLastPendingSyncMessage(self):
+    def getLastPendingSyncMessage(self):
         """
         Returns the last synchronous message from the inbox that hasn't been acknowledged yet.
         :return: A message or None if no message is found.
@@ -532,11 +535,11 @@ class Com(Thread):
         :param fromId: The `fromId` parameter represents the ID of the sender from whom the message is
         expected to be received
         """
-        lastSyncMessage = self._getLastPendingSyncMessage()
+        lastSyncMessage = self.getLastPendingSyncMessage()
         while lastSyncMessage == None or lastSyncMessage.sender != fromId:
             sleep(0.2)
             self.log(f"Waiting for a message from {fromId}")
-            lastSyncMessage = self._getLastPendingSyncMessage()
+            lastSyncMessage = self.getLastPendingSyncMessage()
 
         self.log(f"Received message {lastSyncMessage} from {fromId}")
         self._sendAcknowledge(fromId, lastSyncMessage.getId())
@@ -561,7 +564,7 @@ class Com(Thread):
         The function sends a hearbit message to all processes. This function is called every 1 seconds.
         """
         while self.alive:
-            self.log("Sending hearbit: I'm please don't forget me ")
+            # self.log("Sending hearbit: I'm please don't forget me ")
             heartbit = Heartbit(self.uniqueUUID)
             PyBus.Instance().post(heartbit)
             sleep(1)

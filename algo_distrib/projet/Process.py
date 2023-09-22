@@ -11,6 +11,8 @@ from Com import Com
 
 from pyeventbus3.pyeventbus3 import *
 
+from demoEntities.Drink import Drink
+
 
 class Process(Thread):
 
@@ -22,14 +24,17 @@ class Process(Thread):
         self.alive = True
         self.dead = False
 
-        self.com = Com(nbProcess)
+        self.com = Com(nbProcess, showLogs=False)
         self.myId = None
         self.start()
+
+        # demo infos
+        self.drinkedBeers = []
 
     def log(self, msg):
 
         print(
-            f"PRO<{self.myId}> [{'LIVE' if self.alive else 'ZOMB' if not self.dead else 'DEAD'}] {msg}", flush=True)
+            f"PRO<{self.name} | {self.myId}> [{'LIVE' if self.alive else 'ZOMB' if not self.dead else 'DEAD'}] {msg}", flush=True)
 
     #############################
     ######      RUN       #######
@@ -38,10 +43,10 @@ class Process(Thread):
     def stop(self):
         self.alive = False
         self.synchronizingProcesses = []
-        self.log(f"Let's STOP")
+        self.log(f"I'm tired, I'm leaving the party, bye bye")
         self.com.stop()
         self.join()
-        self.log("TERMINATED")
+        self.log("left the party")
 
     def run(self):
         loop = 0
@@ -57,7 +62,8 @@ class Process(Thread):
             # self.test_async_messages_and_synchro(loop)
             # self.test_section_critique(loop)
             # self.test_sync_messages(loop)
-            self.test_all(loop)
+            # self.test_all(loop)
+            self.test_demo(loop)
 
             loop += 1
 
@@ -181,3 +187,82 @@ class Process(Thread):
 
             if (loop == 1):
                 self.com.synchronize()
+
+    def serveDrink(self, drink: Drink, to):
+        self.log(f"preparing {drink} for {to}")
+        sleep(.5)
+        self.log(f"serving {drink} to {to}")
+        self.com.sendToSync(to, drink)
+
+    def serveRound(self, drinks: Drink):
+        self.log(f"preparing round")
+        sleep(3)
+        self.log(f"serving round")
+        self.com.broadcast(drinks)
+
+    def drink(self):
+        # if there is a drink not drunked yet, drink it
+
+        for msg in self.com.inbox:
+            drink = msg.getContent()
+            if (isinstance(drink, Drink) and msg.getId() not in self.drinkedBeers):
+                self.log(f"drinking {drink}")
+                if (self.name == "Flo"):
+                    sleep(3)
+                elif (self.name == "Simon"):
+                    sleep(1)
+                self.drinkedBeers.append(msg.getId())
+                self.log(
+                    f"finished drinking {drink} it was my {len(self.drinkedBeers)}th beer")
+
+    def go_to_toilet(self):
+        self.log("I'm wanna go to the toilet")
+        self.com.requestSC()
+        self.log("I'm going to the toilet")
+        sleep(3)
+        self.com.releaseSC()
+        self.log("I'm back from the toilet")
+
+    def test_demo(self, loop):
+        # Barman is 0, Flo is 1, Simon is 2
+        # Simon is a heavy drinker and take only 1 second to drink a beer
+        # Flo is a moderate drinker and take 3 seconds to drink a beer
+        # Barman takes .5 second to serve a beer and 3 seconds to prepare a round
+        # Barman is the only one who can serve a beer
+        # Simon and Flo can only drink when they have a beer.
+        # at loop 0 Simon and Flo ordering a beer
+        # at loop 2 Barman prepare a round
+        # at loop 4 they wait each other (synchronize) then both want to go to the toilet
+
+        if (self.name == "Barman"):
+            if (loop == 0):
+                self.serveDrink(Drink("beer"), 1)
+                self.serveDrink(Drink("beer"), 2)
+            if (loop == 3):
+                self.serveRound(Drink("beer"))
+            if (loop == 4):
+                self.log("I'm waiting (synchronize)")
+                self.com.synchronize()
+                self.log("Everyone is back !")
+
+        if (self.name == "Flo"):
+            if (loop == 0):
+                self.com.recevFromSync(0)
+            if (loop == 4):
+                self.log("I'm waiting (synchronize)")
+                self.com.synchronize()
+                self.log("Everyone is back !")
+                self.go_to_toilet()
+
+        if (self.name == "Simon"):
+            if (loop == 0):
+                self.com.recevFromSync(0)
+                self.drink()
+            if (loop == 4):
+                self.log("I'm waiting (synchronize)")
+                self.com.synchronize()
+                self.log("Everyone is back !")
+                self.go_to_toilet()
+
+        if (self.name in ["Flo", "Simon"]):
+            self.drink()
