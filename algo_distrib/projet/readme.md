@@ -29,7 +29,7 @@ You can also change the test by uncommenting the test you want to run in the `Pr
 - Broadcast: Broadcast messages to all processes asynchronously or synchronously.
 - Synchronization: Processes can synchronize.
 - Token-based access to critical section: Processes can request access to a critical section. The token is passed from process to process in a ring topology.
-- Dead process handling: Processes can detect and handle the termination of other processes (WIP: for now only if the process is stop with the method `stop()`).
+- Dead process handling: Processes can detect and handle the termination of other processes.
 
 ## Usage of the Com class
 
@@ -41,10 +41,10 @@ To use the `Com` API for inter-process communication and synchronization, follow
    from Com import Com
    ```
 
-2. Create an instance of the `Com` class by specifying the number of processes. For example:
+2. Create an instance of the `Com` class by specifying the number of processes. You can show or hide com logs. For example:
 
    ```python
-   com = Com(number_of_processes)
+   com = Com(number_of_processes,showLogs=True)
    ```
 
 3. Retrieve the ID of the current process using the `getProcessId` method. This method waits for all processes to have a valid ID before returning the ID of the current process.
@@ -150,5 +150,7 @@ I also chose to use to variables instead of a single variable with 4 state to ma
 I chose to use UUID for process identification during the connection phase because it is the simplest solution to implement. In the current state of the project, the processes are on the same machine, so there is no risk of identical UUIDs.
 
 If the processes are on different machines, the possibility of having identical UUIDs is very low (as the UUID as 2<sup>122</sup> possible combinations). But if it happens, the processes will be stuck at the connection phase (when calling the `getId` method) and the user will have to restart the processes.
+
+One way to avoid this issue is that instead of only using the UUID, we could use the UUID and the MAC address of the machine in this format for example: (`<mac_adresse>-<uuid>`). This way, the possibility of having identical UUIDs is not possible.
 
 The UUID is generated using the `uuid4` method from the `uuid` module and are used to identify the process when the regular id (number) is unknown or changing.
