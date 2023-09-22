@@ -218,6 +218,8 @@ class Com(Thread):
         senderUUID = event.getSender()
         if senderUUID not in self.synchronizingProcesses:
             self.synchronizingProcesses.append(senderUUID)
+            # update clock
+            self.inc_clock(event.getClock())
 
         if self._isAllProcessSynchonized() and self.alive:
             self.log("The last process has synchronized, I'm starting again")
@@ -245,6 +247,7 @@ class Com(Thread):
         """
         self.log(f"SYNCHRONIZING")
         sync = Sync(self.uniqueUUID)
+        sync.setClock(self.clock)
         self.synchronizingProcesses.append(self.uniqueUUID)
         PyBus.Instance().post(sync)
 
