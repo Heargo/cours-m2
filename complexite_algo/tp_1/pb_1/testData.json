@@ -1,0 +1,14 @@
+{
+  "executable": "python3 main.py",
+  "generator": "python3 genererNombre.py --tempFile",
+  "temp_file": "calculAux.tmp",
+  "arg_executable": "calculAux.tmp",
+  "valeurInitiale": 10,
+  "borneSup": 1000000,
+  "increment": "floor(3*x/2)+1",
+  "attenteMax": 25,
+  "logScale": false,
+  "courbesSup": ["log(x)", "x", "x*log(x)", "x**2", "2**x"],
+  "outputImageNamePrefix": "graph",
+  "outputImageSize": "1000,700"
+}
