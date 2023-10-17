@@ -1,0 +1,15 @@
+version: "3"
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Replace with the appropriate port if needed
+
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080" # Replace with the appropriate port if needed
