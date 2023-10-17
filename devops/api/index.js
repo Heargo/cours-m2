@@ -9,6 +9,12 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
+// allow CORS
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  next();
+});
+
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });

@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
 import HelloWorld from './components/HelloWorld.vue'
+
+import { useApiStore } from './stores/api'
+
+const apiStore = useApiStore()
+
+apiStore.getRandomFortune().then((quote) => {
+  console.log(quote)
+})
 </script>
 
 <template>
