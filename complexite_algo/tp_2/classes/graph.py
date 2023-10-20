@@ -33,3 +33,6 @@ class Graph():
 
     def get_graph(self):
         return self._graph
+
+    def get_nb_sommets(self):
+        return len(self.get_graph().keys())
