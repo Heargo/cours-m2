@@ -57,7 +57,7 @@ def solve3Coloring(g, verbose):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("usage : python3 solveClique.py <filename> <size_clique> [-v]")
+        print("usage : python3 solveClique.py <filename> [-v]")
         exit(1)
     filename = sys.argv[1]
     if len(sys.argv) > 2 and (sys.argv[2] == "-v"

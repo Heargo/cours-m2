@@ -36,3 +36,15 @@ class Graph():
 
     def get_nb_sommets(self):
         return len(self.get_graph().keys())
+
+    def inverse(self):
+        nodes = list(self._graph.keys())
+        graph_tmp = {}
+        for node in nodes:
+            if (node not in graph_tmp):
+                graph_tmp[node] = []
+                for n2 in nodes:
+                    if (n2 not in self.get_voisin(node) and n2 != node):
+                        graph_tmp[node].append(n2)
+
+        self._graph = graph_tmp
