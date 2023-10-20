@@ -11,6 +11,7 @@ def solve3Coloring(g, verbose):
     """
     Solves the 3-Coloring problem.
     :param g: graph G
+    :param verbose: if True, prints details.
     :return: True if the graph is 3-colorable, False otherwise.
     """
 
@@ -26,16 +27,16 @@ def solve3Coloring(g, verbose):
     # List to store constraints
     cnf = []
 
-    # Add constraints for each vertex
+    # Add constraints for each node
     for u in range(1, n + 1):
-        # Each vertex must be assigned one of three colors
+        # Each node must be assigned one of three colors
         cnf.append([variables[u-1] * 3 - i for i in range(0, 3)])
     print(cnf)
 
     # Add constraints for each edge
     for u, v in combinations(range(1, n + 1), 2):
         if str(v) in g.get_voisin(str(u)):
-            # Ensure that adjacent vertices have different colors
+            # Ensure that adjacent nodes have different colors
             for i in range(0, 3):
                 cnf.append([-(variables[u-1] * 3 - i), -
                            (variables[v-1] * 3 - i)])

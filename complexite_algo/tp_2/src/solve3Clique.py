@@ -18,7 +18,6 @@ if __name__ == '__main__':
     else:
         verbose = False
 
-    print("file is", filename)
     g = graph.Graph(filename)
 
     g.inverse()

@@ -163,7 +163,7 @@ def SolvLawler(graph):
 
 
 if __name__ == "__main__":
-    graph = graph.Graph("./test_ok.txt")
+    graph = graph.Graph("../instances/test_nok_2.txt")
 
     # backtracking
     coloriage, colorable = solve_backtracking(graph)
