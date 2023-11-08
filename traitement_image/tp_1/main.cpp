@@ -59,13 +59,11 @@ cv::Mat afficheHistogrammes( const std::vector<double>& h_I,
 
     // On recherche de la valeur maximale de l'histogramme
     double max = 0.0;
-    print("coucou");
     for ( int i = 0; i < h_I.size(); i++ )
         if ( h_I[i] > max )
         //On stocke la valeur maximale
         max = h_I[i];
 
-    print("coucou 2 ");
     // Tracé de l'histogramme h_I
     for ( int i = 0; i < h_I.size(); i++ )
     {
@@ -73,7 +71,6 @@ cv::Mat afficheHistogrammes( const std::vector<double>& h_I,
         for ( int y = 255; y > 255 - (h_I[i] / max) * 255; y-- )
         image.at<uchar>(y,x) = 0;
     }
-    print(" coucou3");
     // Tracé de l'histogramme H_I
     for ( int i = 0; i < H_I.size(); i++ )
     {
@@ -82,10 +79,27 @@ cv::Mat afficheHistogrammes( const std::vector<double>& h_I,
         for ( int y = 255; y > 255 - (H_I[i] / H_I.back()) * 255; y-- )
         image.at<uchar>(y,x) = 0;
     }
-    print("done");
-
     return image;
 }
+
+
+cv::Mat egalisation_histogramme( const cv::Mat& image )
+{
+    std::vector<double> h_I = histogramme(image);
+    std::vector<double> H_I = histogramme_cumule(h_I);
+    cv::Mat image_egalisee(image.rows, image.cols, CV_8UC1);
+    for(int i = 0; i < image.rows; i++)
+    {
+        for(int j = 0; j < image.cols; j++) 
+        {
+            //colorier le pixel (i,j) de l'image egalisee avec la valeur de l'histogramme cumule
+            int val = int(H_I[image.at<uchar>(i,j)] * 255) % 255;
+            image_egalisee.at<uchar>(i,j) = val;
+        }   
+    }
+    return image_egalisee;
+}
+
 
 // ---------------------------------
 // ------------ MAIN ---------------
@@ -123,11 +137,20 @@ int main(int argc, char *argv[])
     }
 
     imshow( "TP1", f );                // l'affiche dans la fenêtre
-    // std::vector<double> h = histogramme(f);
-    //std::vector<double> H = histogramme_cumule(h);
+
     namedWindow( "Histogramme");
     Mat hist = afficheHistogrammes( histogramme(f), histogramme_cumule(histogramme(f)) );
     imshow( "Histogramme", hist );
+
+    
+    Mat img = egalisation_histogramme(f);
+    namedWindow( "Image egalise");
+    imshow( "Image egalise", img );
+
+    Mat hist_modif = afficheHistogrammes( histogramme(img), histogramme_cumule(histogramme(img)) );
+    namedWindow( "Histogramme egalise" );
+    imshow( "Histogramme egalise", hist_modif );
+    
     while ( waitKey(50) < 0 )          // attend une touche
     { // Affiche la valeur du slider
     if ( value != old_value )
