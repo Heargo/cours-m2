@@ -17,37 +17,28 @@ void print(char str[])
 // ----------- HISTOGRAM -----------
 // ---------------------------------
 
+
 std::vector<double> histogramme( Mat image )
 {
-    int V = 255;
+  int nbPixel = image.rows * image.cols;
+  std::vector<double> histo( 256, 0.0 );
 
-    std::vector<double> h_I(V, 0);
+  for ( int y = 0; y < image.rows; y++ )
+    for ( int x = 0; x < image.cols; x++ )
+      histo[ image.at<uchar>(y,x) ] += 1.0/nbPixel;
 
-    for (int i = 0; i < image.rows; i++)
-    {
-        for (int j = 0; j < image.cols; j++)
-        {
-            h_I[image.at<uchar>(i,j)]++;
-        }
-    }
-
-    for(int i = 0; i < V; i++)
-    {
-        h_I[i] = h_I[i] / (image.rows * image.cols);
-    }
-
-    return h_I;
-}
+  return histo;
+} 
 
 std::vector<double> histogramme_cumule( const std::vector<double>& h_I )
 {
-    int V = 255;
+    int V = h_I.size();
     std::vector<double> H_I(V, 0);
     H_I[0] = h_I[0];
+
     for(int i = 1; i < V; i++)
-    {
         H_I[i] += h_I[i] + H_I[i-1];
-    }
+
     return H_I;
 }
 
@@ -93,7 +84,7 @@ cv::Mat egalisation_histogramme( const cv::Mat& image )
         for(int j = 0; j < image.cols; j++) 
         {
             //colorier le pixel (i,j) de l'image egalisee avec la valeur de l'histogramme cumule
-            int val = int(H_I[image.at<uchar>(i,j)] * 255) % 255;
+            int val = H_I[image.at<uchar>(i,j)] * H_I.size();
             image_egalisee.at<uchar>(i,j) = val;
         }   
     }
@@ -112,44 +103,72 @@ int main(int argc, char *argv[])
 
     int old_value = 0;
     int value = 128;
-    //read parameters from command line
+    int mode = 0; //0, gray, 1, color
 
     if (argc < 1)
     {
         //print "usage: prog_name <image_path>"
-        print("usage: main <image_path>");
+        print("usage: main <image_path> <color (boolean) (optional)>");
         return 1;
+    }
+    if(argc == 3) 
+    {
+        mode = 1;
     }
     
     char* image_path = argv[1]; 
 
     namedWindow( "TP1");               // crée une fenêtre
     createTrackbar( "track", "TP1", &value, 255, NULL); // un slider
-    Mat f = imread(image_path);        // lit l'image
-
+    Mat image = imread(image_path);        // lit l'image
+    Mat f = image.clone(); //copy image to f
+    std::vector<Mat> channels;
 
     //check if image is in grayscale
-    if (f.channels() != 1)
+    if (image.channels() != 1 && mode == 0)
     {
         //convert to grayscale
         print("Image not in grayscale, converting to grayscale");
+        cvtColor(image, image, COLOR_BGR2GRAY);
         cvtColor(f, f, COLOR_BGR2GRAY);
     }
 
-    imshow( "TP1", f );                // l'affiche dans la fenêtre
-
+    if(mode==1){
+        //convert to HSV
+        print("Image in color, converting to HSV");
+        cvtColor(f, f, COLOR_BGR2HSV);
+        //get V channel from image
+        split(f, channels);
+        f = channels[2];
+    }
+    //base image
+    imshow( "TP1", image );
+    //histogramme of base image
     namedWindow( "Histogramme");
-    Mat hist = afficheHistogrammes( histogramme(f), histogramme_cumule(histogramme(f)) );
+
+    Mat hist = afficheHistogrammes( histogramme(f) , histogramme_cumule(histogramme(f)) );
     imshow( "Histogramme", hist );
 
-    
+    //modified image
     Mat img = egalisation_histogramme(f);
-    namedWindow( "Image egalise");
-    imshow( "Image egalise", img );
-
+    
+    //histogramme of modified image
     Mat hist_modif = afficheHistogrammes( histogramme(img), histogramme_cumule(histogramme(img)) );
     namedWindow( "Histogramme egalise" );
     imshow( "Histogramme egalise", hist_modif );
+
+    namedWindow( "Image egalise");
+    if(mode==1){
+        //merge channels
+        channels[2] = img;
+        merge(channels, img);
+        //convert to HSV
+        cvtColor(img, img, COLOR_HSV2BGR);
+    }
+
+    imshow( "Image egalise", img );
+
+
     
     while ( waitKey(50) < 0 )          // attend une touche
     { // Affiche la valeur du slider
