@@ -112,7 +112,6 @@ cv::Mat tramage_floyd_steinberg(const cv::Mat& input) {
             output.at<float>(y, x) = newPixel;
 
             // Propagate the error to neighbors
-            //FIXME :😭😭😭😭😭😭😭😭😭😭😭😭😭😭😭
             if (x + 1 < inputFloat.cols) {
                 output.at<float>(y, x + 1) += error * 7 / 16;
             }
@@ -215,14 +214,22 @@ int main(int argc, char *argv[])
 
     // tramage
     
-    Mat tramage = tramage_floyd_steinberg(f);
+    Mat tramage;
 
     if(mode==1){
-        //merge channels
-        channels[2] = tramage;
+        //convert image to CYMK
+        // cvtColor(image, image, COLOR_BGR2YCrCb);
+
+        //split channels
+        split(image, channels);
+
+        for(int i = 0; i < channels.size(); i++)
+            channels[i] = tramage_floyd_steinberg(channels[i]);
+
         merge(channels, tramage);
-        //convert to HSV
-        cvtColor(tramage, tramage, COLOR_HSV2BGR);
+
+    }else{
+        tramage = tramage_floyd_steinberg(image);
     }
 
     namedWindow( "Tramage");
