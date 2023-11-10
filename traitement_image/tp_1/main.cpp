@@ -92,6 +92,51 @@ cv::Mat egalisation_histogramme( const cv::Mat& image )
 }
 
 
+cv::Mat tramage_floyd_steinberg(const cv::Mat& input) {
+    // Convert the input image to a floating-point type
+    cv::Mat inputFloat;
+    input.convertTo(inputFloat, CV_32FC1);
+
+    // Clone the input image to store the result
+    cv::Mat output = inputFloat.clone();
+
+    for (int y = 0; y < inputFloat.rows; ++y) {
+        for (int x = 0; x < inputFloat.cols; ++x) {
+            // Get the current pixel value
+            float oldPixel = output.at<float>(y, x);
+            float newPixel = oldPixel > 128 ? 255 : 0;
+            // Calculate the quantization error
+            float error = oldPixel  - newPixel;
+
+            // Update the current pixel value
+            output.at<float>(y, x) = newPixel;
+
+            // Propagate the error to neighbors
+            //FIXME :😭😭😭😭😭😭😭😭😭😭😭😭😭😭😭
+            if (x + 1 < inputFloat.cols) {
+                output.at<float>(y, x + 1) += error * 7 / 16;
+            }
+            if (x - 1 >= 0 && y + 1 < inputFloat.rows) {
+                output.at<float>(y + 1, x - 1) += error * 3 / 16;
+            }
+            if (y + 1 < inputFloat.rows) {
+                output.at<float>(y + 1, x) += error * 5 / 16;
+            }
+            if (x + 1 < inputFloat.cols && y + 1 < inputFloat.rows) {
+                output.at<float>(y + 1, x + 1) += error * 1 / 16;
+            }
+            
+        }
+    }
+
+    // Convert the output image back to the uchar type
+    cv::Mat outputUchar;
+    output.convertTo(outputUchar, CV_8UC1, 255.0);
+
+    return outputUchar;
+}
+
+
 // ---------------------------------
 // ------------ MAIN ---------------
 // ---------------------------------
@@ -167,6 +212,22 @@ int main(int argc, char *argv[])
     }
 
     imshow( "Image egalise", img );
+
+    // tramage
+    
+    Mat tramage = tramage_floyd_steinberg(f);
+
+    if(mode==1){
+        //merge channels
+        channels[2] = tramage;
+        merge(channels, tramage);
+        //convert to HSV
+        cvtColor(tramage, tramage, COLOR_HSV2BGR);
+    }
+
+    namedWindow( "Tramage");
+    imshow( "Tramage", tramage );
+
 
 
     
