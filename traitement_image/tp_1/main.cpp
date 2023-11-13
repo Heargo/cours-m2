@@ -1,6 +1,8 @@
 #include <iostream>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <vector>
+
 using namespace cv;
 
 // ---------------------------------
@@ -91,6 +93,9 @@ cv::Mat egalisation_histogramme( const cv::Mat& image )
     return image_egalisee;
 }
 
+// ---------------------------------
+// ----------- TRAMAGE -------------
+// ---------------------------------
 
 cv::Mat tramage_floyd_steinberg(const cv::Mat& input) {
     // Convert the input image to a floating-point type
@@ -136,6 +141,67 @@ cv::Mat tramage_floyd_steinberg(const cv::Mat& input) {
 }
 
 
+// Function to calculate distance between two colors
+float distance_color_l2(cv::Vec3f bgr1, cv::Vec3f bgr2) {
+    return cv::norm(bgr1, bgr2, cv::NORM_L2);
+}
+
+// Function to find the index of the color closest to the given color in the vector of colors
+int best_color(cv::Vec3f bgr, std::vector<cv::Vec3f> colors) {
+    int bestIndex = 0;
+    float minDistance = distance_color_l2(bgr, colors[0]);
+
+    for (int i = 1; i < colors.size(); ++i) {
+        float distance = distance_color_l2(bgr, colors[i]);
+        if (distance < minDistance) {
+            minDistance = distance;
+            bestIndex = i;
+        }
+    }
+
+    return bestIndex;
+}
+
+// Function to calculate the error vector between two colors
+cv::Vec3f error_color(cv::Vec3f bgr1, cv::Vec3f bgr2) {
+    return bgr1 - bgr2;
+}
+
+// Function for CMYK halftoning using Floyd-Steinberg algorithm
+cv::Mat tramage_floyd_steinberg_cmyk(const cv::Mat& input, std::vector<cv::Vec3f> colors) {
+    // Convert input image to a matrix of 3-channel floating-point values
+    cv::Mat fs;
+    input.convertTo(fs, CV_32FC3, 1 / 255.0);
+
+    // Floyd-Steinberg algorithm
+    for (int y = 0; y < fs.rows; ++y) {
+        for (int x = 0; x < fs.cols; ++x) {
+            cv::Vec3f currentColor = fs.at<cv::Vec3f>(y, x);
+            int index = best_color(currentColor, colors);
+            cv::Vec3f error = error_color(currentColor, colors[index]);
+            fs.at<cv::Vec3f>(y, x) = colors[index];
+
+            // Propagate the error to neighbors
+            if (x + 1 < fs.cols) {
+                fs.at<cv::Vec3f>(y, x + 1) += error * (7.0 / 16.0);
+            }
+            if (x - 1 >= 0 && y + 1 < fs.rows) {
+                fs.at<cv::Vec3f>(y + 1, x - 1) += error * (3.0 / 16.0);
+            }
+            if (y + 1 < fs.rows) {
+                fs.at<cv::Vec3f>(y + 1, x) += error * (5.0 / 16.0);
+            }
+            if (x + 1 < fs.cols && y + 1 < fs.rows) {
+                fs.at<cv::Vec3f>(y + 1, x + 1) += error * (1.0 / 16.0);
+            }
+        }
+    }
+    // Convert the matrix of 3-channel floating-point values back to BGR
+    cv::Mat output;
+    fs.convertTo(output, CV_8UC3, 255.0);
+    return output;
+}
+
 // ---------------------------------
 // ------------ MAIN ---------------
 // ---------------------------------
@@ -179,7 +245,6 @@ int main(int argc, char *argv[])
 
     if(mode==1){
         //convert to HSV
-        print("Image in color, converting to HSV");
         cvtColor(f, f, COLOR_BGR2HSV);
         //get V channel from image
         split(f, channels);
@@ -217,17 +282,25 @@ int main(int argc, char *argv[])
     Mat tramage;
 
     if(mode==1){
-        //convert image to CYMK
-        // cvtColor(image, image, COLOR_BGR2YCrCb);
-
         //split channels
-        split(image, channels);
+        // split(image, channels);
 
-        for(int i = 0; i < channels.size(); i++)
-            channels[i] = tramage_floyd_steinberg(channels[i]);
+        // for(int i = 0; i < channels.size(); i++)
+        //     channels[i] = tramage_floyd_steinberg(channels[i]);
 
-        merge(channels, tramage);
+        // merge(channels, tramage);
 
+        //WITH CMYK
+        // Define CMYK colors (from BGR)
+        std::vector<cv::Vec3f> cmykColors = {
+            cv::Vec3f(0.0, 0.0, 0.0),  // Black 
+            cv::Vec3f(1.0, 1.0, 1.0),  // white
+            cv::Vec3f(1.0, 0.0, 1.0),  // Majenta
+            cv::Vec3f(0.0, 1.0, 1.0),  // Yellow
+            cv::Vec3f(1.0, 1.0, 0.0)   // Cyan
+        };
+        // Apply CMYK halftoning
+        tramage = tramage_floyd_steinberg_cmyk(image, cmykColors);
     }else{
         tramage = tramage_floyd_steinberg(image);
     }
