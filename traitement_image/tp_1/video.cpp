@@ -208,114 +208,91 @@ cv::Mat tramage_floyd_steinberg_cmyk(const cv::Mat& input, std::vector<cv::Vec3f
 
 int main(int argc, char *argv[])
 {
-
-
-
-    int old_value = 0;
-    int value = 128;
     int mode = 0; //0, gray, 1, color
-
-    if (argc < 1)
-    {
-        //print "usage: prog_name <image_path>"
-        print("usage: main <image_path> <color (boolean) (optional)>");
-        return 1;
-    }
-    if(argc == 3) 
-    {
-        mode = 1;
-    }
-    
-    char* image_path = argv[1]; 
-
-    namedWindow( "TP1");               // crée une fenêtre
-    createTrackbar( "track", "TP1", &value, 255, NULL); // un slider
-    Mat image = imread(image_path);        // lit l'image
-    Mat f = image.clone(); //copy image to f
     std::vector<Mat> channels;
+    
+    // Define CMYK colors (from BGR)
+    std::vector<cv::Vec3f> cmykColors = {
+        cv::Vec3f(0.0, 0.0, 0.0),  // Black 
+        cv::Vec3f(1.0, 1.0, 1.0),  // white
+        cv::Vec3f(1.0, 0.0, 1.0),  // Majenta
+        cv::Vec3f(0.0, 1.0, 1.0),  // Yellow
+        cv::Vec3f(1.0, 1.0, 0.0)   // Cyan
+    };
+    
 
-    //check if image is in grayscale
-    if (image.channels() != 1 && mode == 0)
+    VideoCapture cap(0);
+    if(!cap.isOpened()) return -1;
+    Mat frame, frame_output;
+    Mat hist;
+    namedWindow("video", WINDOW_AUTOSIZE);
+    namedWindow("histogramme", WINDOW_AUTOSIZE);
+    for(;;)
     {
-        //convert to grayscale
-        print("Image not in grayscale, converting to grayscale");
-        cvtColor(image, image, COLOR_BGR2GRAY);
-        cvtColor(f, f, COLOR_BGR2GRAY);
+        cap >> frame;
+
+        //take user input 
+        int   key_code = waitKey(30);
+        int ascii_code = key_code & 0xff;
+        //apply changes to frame
+        if (mode == 0) {
+            cvtColor(frame, frame_output, COLOR_BGR2GRAY);
+        }else{
+            frame_output = frame.clone();
+        }
+
+        if (ascii_code == 't'){
+            if(mode==1){
+                // Apply CMYK halftoning
+                //convert to CMYK
+                frame_output = tramage_floyd_steinberg_cmyk(frame_output, cmykColors);
+            }else{
+                frame_output = tramage_floyd_steinberg(frame_output);
+            }
+        }
+        
+        if(ascii_code =='e')
+        {
+            if(mode==1){
+                //convert to HSV
+                cvtColor(frame_output, frame_output, COLOR_BGR2HSV);
+                //get V channel from image
+                split(frame_output, channels);
+                frame_output = channels[2];
+                frame_output = egalisation_histogramme(frame_output);
+                channels[2] = frame_output;
+                merge(channels, frame_output);
+                cvtColor(frame_output, frame_output, COLOR_HSV2BGR);
+            }else{
+                frame_output = egalisation_histogramme(frame_output);
+            }
+        }
+
+        //show modified frame
+        imshow("video", frame_output);
+        
+        
+        if(mode==1)
+        {
+            //show histogram for V channel of HSV image
+            cvtColor(frame_output, frame_output, COLOR_BGR2HSV);
+            split(frame_output, channels);
+            frame_output = channels[2];
+            hist = afficheHistogrammes( histogramme(frame_output) , histogramme_cumule(histogramme(frame_output)) );
+            channels[2] = frame_output;
+            merge(channels, frame_output);
+            cvtColor(frame_output, frame_output, COLOR_HSV2BGR);
+
+        }else{
+            hist = afficheHistogrammes( histogramme(frame_output) , histogramme_cumule(histogramme(frame_output)) );
+        }
+        imshow( "histogramme", hist );
+
+        if (ascii_code == 'c') {
+            mode = mode ? 0 : 1;
+        }
+        
+        if( ascii_code == 'q') break;
     }
-
-    if(mode==1){
-        //convert to HSV
-        cvtColor(f, f, COLOR_BGR2HSV);
-        //get V channel from image
-        split(f, channels);
-        f = channels[2];
-    }
-    //base image
-    imshow( "TP1", image );
-    //histogramme of base image
-    namedWindow( "Histogramme");
-
-    Mat hist = afficheHistogrammes( histogramme(f) , histogramme_cumule(histogramme(f)) );
-    imshow( "Histogramme", hist );
-
-    //modified image
-    Mat img = egalisation_histogramme(f);
-    
-    //histogramme of modified image
-    Mat hist_modif = afficheHistogrammes( histogramme(img), histogramme_cumule(histogramme(img)) );
-    namedWindow( "Histogramme egalise" );
-    imshow( "Histogramme egalise", hist_modif );
-
-    namedWindow( "Image egalise");
-    if(mode==1){
-        //merge channels
-        channels[2] = img;
-        merge(channels, img);
-        //convert to HSV
-        cvtColor(img, img, COLOR_HSV2BGR);
-    }
-
-    imshow( "Image egalise", img );
-
-    // tramage
-    
-    Mat tramage;
-
-    if(mode==1){
-        //split channels
-        // split(image, channels);
-
-        // for(int i = 0; i < channels.size(); i++)
-        //     channels[i] = tramage_floyd_steinberg(channels[i]);
-
-        // merge(channels, tramage);
-
-        //WITH CMYK
-        // Define CMYK colors (from BGR)
-        std::vector<cv::Vec3f> cmykColors = {
-            cv::Vec3f(0.0, 0.0, 0.0),  // Black 
-            cv::Vec3f(1.0, 1.0, 1.0),  // white
-            cv::Vec3f(1.0, 0.0, 1.0),  // Majenta
-            cv::Vec3f(0.0, 1.0, 1.0),  // Yellow
-            cv::Vec3f(1.0, 1.0, 0.0)   // Cyan
-        };
-        // Apply CMYK halftoning
-        tramage = tramage_floyd_steinberg_cmyk(image, cmykColors);
-    }else{
-        tramage = tramage_floyd_steinberg(image);
-    }
-
-    namedWindow( "Tramage");
-    imshow( "Tramage", tramage );
-
-    
-
-    while ( waitKey(50) < 0 )          // attend une touche
-    { // Affiche la valeur du slider
-    if ( value != old_value )
-    {
-        old_value = value;
-        std::cout << "value=" << value << std::endl;
-    }
-    }
+    return 0;
 } 

@@ -5,7 +5,7 @@ find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 SET( MAIN_EXEC
-     main
+     video
      # vous pouvez ajouter d'autres programmes ici
      )
 
