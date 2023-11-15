@@ -93,6 +93,54 @@ cv::Mat gradient(cv::Mat i_x, cv::Mat i_y)
   return result;
 }
 
+bool contour(cv::Mat lap, int i, int j)
+{
+  //verifie si il y a des + et des - dans le voisinage (3x3) de i,j du lap
+  int nb_pos = 0;
+  int nb_neg = 0;
+  for(int k=i-1; k<=i+1;i++)
+  {
+    for(int l= j-1;l<=j+1;l++)
+    {
+      if (k >= 0 && k < lap.rows && l >= 0 && l < lap.cols)
+      {
+        if(lap.at<uchar>(k,l) >0)
+        {
+          nb_pos++;
+        }
+        else if(lap.at<uchar>(k,l) < 0)
+        {
+          nb_neg++;
+        }
+      }
+    }
+  }
+  std::cout << nb_pos << "+ " << nb_neg <<"-" << std::endl;
+  return (nb_pos > 0 && nb_neg > 0);
+}
+
+cv::Mat laplacianThreshold(const cv::Mat input, int tr) {
+    // Appliquer le filtre Laplacien
+    cv::Mat res = cv::Mat::zeros(input.rows, input.cols, input.type());
+    cv::Mat lap = laplacien(input, 1, 0.6);
+    cv::Mat grad = gradient(sobel_x(input), sobel_y(input));
+
+    // Trouver les points où le Laplacien change de signe
+    for (int i = 0; i < lap.rows; i++) {
+        for (int j = 0; j < lap.cols; j++) {
+            if(contour(lap, i, j) && grad.at<uchar>(i,j) >= tr)
+            {
+              res.at<uchar>(i,j) = 0;
+            }
+            else{
+              res.at<uchar>(i,j) = 255;
+            }
+        }
+    }
+
+    return res;
+}
+
 
 int main( int argc, char* argv[])
 {
@@ -131,6 +179,10 @@ int main( int argc, char* argv[])
       if(asciicode == 'g')
       {
         modified_image = gradient(sobel_x(modified_image), sobel_y(modified_image));
+      }
+      if(asciicode == 't')
+      {
+        modified_image = laplacianThreshold(modified_image, 2);
       }
       if(asciicode =='r')
       {
