@@ -1,10 +1,12 @@
 #include "opencv2/imgproc.hpp"
 #include <opencv2/highgui.hpp>
+#include <iostream>
 using namespace cv;
 
-cv::Mat filtreM(cv::Mat input, cv::Mat M) {
+cv::Mat filtreM(cv::Mat input, cv::Mat M, int delta = 0) {
     cv::Mat result;
-    cv::filter2D(input, result, -1, M, Point(-1, -1), 0, cv::BORDER_DEFAULT);
+    cv::flip(M, M, 1);
+    cv::filter2D(input, result, -1, M, Point(-1, -1), delta, cv::BORDER_DEFAULT);
     return result;
 }
 
@@ -53,6 +55,43 @@ cv::Mat laplacien(cv::Mat input,int nb_iteration,float coef)
   return modified_image;
 }
 
+cv::Mat sobel_x(cv::Mat input)
+{
+  cv::Mat M = (cv::Mat_<float>(3, 3) << 
+              1.0, 0.0, -1.0, 
+              2.0, 0.0, -2.0, 
+              1.0, 0.0, -1.0
+              )/4.0;
+
+  return filtreM(input, M, 128);
+
+}
+
+
+cv::Mat sobel_y(cv::Mat input)
+{
+  cv::Mat M = (cv::Mat_<float>(3, 3) << 
+              -1.0, -2.0, -1.0, 
+              0.0, 0.0, 0.0, 
+              1.0, 2.0, 1.0
+              )/4.0;
+
+
+  return filtreM(input, M, 128);
+}
+
+cv::Mat gradient(cv::Mat i_x, cv::Mat i_y)
+{
+  cv::Mat result = cv::Mat::zeros(i_x.rows, i_x.cols, i_x.type());
+  for (int i = 0; i < i_x.rows; i++)
+  {
+    for (int j = 0; j < i_x.cols; j++)
+    {
+      result.at<uchar>(i,j) = cv::saturate_cast<uchar>(sqrt(pow(i_x.at<uchar>(i,j) - 128 ,2) + pow(i_y.at<uchar>(i,j) - 128,2)));
+    }
+  }
+  return result;
+}
 
 
 int main( int argc, char* argv[])
@@ -80,6 +119,22 @@ int main( int argc, char* argv[])
       if ( asciicode == 'l' )
       {
         modified_image = laplacien(modified_image, 1, 0.6);
+      }
+      if( asciicode == 'x' )
+      {
+        modified_image = sobel_x(modified_image);
+      }
+      if( asciicode == 'y' )
+      {
+        modified_image = sobel_y(modified_image);
+      }
+      if(asciicode == 'g')
+      {
+        modified_image = gradient(sobel_x(modified_image), sobel_y(modified_image));
+      }
+      if(asciicode =='r')
+      {
+        modified_image = input.clone();
       }
       if ( asciicode == 'q' ) break;
       imshow( "Youpi", modified_image );            // l'affiche dans la fenêtre
