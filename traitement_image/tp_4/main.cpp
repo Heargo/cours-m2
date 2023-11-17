@@ -15,6 +15,7 @@ struct ColorDistribution {
     
   ColorDistribution() { reset(); }
   ColorDistribution& operator=( const ColorDistribution& other ) = default;
+
   // Met à zéro l'histogramme    
   void reset()
   {
@@ -59,7 +60,7 @@ struct ColorDistribution {
       }
   }
 
-  // Retourne la distance entre cet histogramme et l'histogramme other
+  // distance between histomgram and other
   float distance(const ColorDistribution& other) const
   {
       float distance = 0.0;
@@ -95,8 +96,8 @@ ColorDistribution getColorDistribution( Mat input, Point pt1, Point pt2 )
 
 float minDistance(const ColorDistribution& h, const std::vector<ColorDistribution>& hists)
 {
+    // Handle the case when the vector is empty
     if (hists.empty()) {
-        // Handle the case when the vector is empty
         return std::numeric_limits<float>::infinity();
     }
 
@@ -121,6 +122,7 @@ Mat recoObject(Mat input,
 {
     Mat output = input.clone();
 
+    //loop throught blocks
     for (int y = 0; y <= input.rows - block_size; y += block_size)
     {
         for (int x = 0; x <= input.cols - block_size; x += block_size)
@@ -139,12 +141,8 @@ Mat recoObject(Mat input,
             string label = (dist_background < dist_object) ? "Background" : "Object";
 
             // Set color based on the label (apply a filter)
-
             Vec3b color = (label == "Background") ? colors[0] : colors[1];
-
-            
             rectangle(output, pt1_block, pt2_block, Scalar(color[0], color[1], color[2]), FILLED);
-            
         }
     }
 
@@ -172,29 +170,36 @@ int main( int argc, char** argv )
   const int width = 640;
   const int height= 480;
   const int size  = 50;
-  // Ouvre la camera
-  pCap = new VideoCapture( 0 );
-  if( ! pCap->isOpened() ) {
-    cout << "Couldn't open image / camera ";
-    return 1;
-  }
-  // Force une camera 640x480 (pas trop grande).
-  pCap->set( CAP_PROP_FRAME_WIDTH, 640 );
-  pCap->set( CAP_PROP_FRAME_HEIGHT, 480 );
-  (*pCap) >> img_input;
-  if( img_input.empty() ) return 1; // probleme avec la camera
-  Point pt1( width/2-size/2, height/2-size/2 );
-  Point pt2( width/2+size/2, height/2+size/2 );
-  namedWindow( "input", 1 );
-  imshow( "input", img_input );
+
   bool freeze = false;
   std::vector<ColorDistribution> col_hists;
   std::vector<ColorDistribution> col_hists_object;
   std::vector<std::vector<ColorDistribution>> col_hists_multiple_objects;
   bool recognitionMode = false;
 
+  // open camera
+  pCap = new VideoCapture( 0 );
+  if( ! pCap->isOpened() ) {
+    cout << "Couldn't open image / camera ";
+    return 1;
+  }
+  // Force camera 640x480 (not too big)
+  pCap->set( CAP_PROP_FRAME_WIDTH, 640 );
+  pCap->set( CAP_PROP_FRAME_HEIGHT, 480 );
+  (*pCap) >> img_input;
+  if( img_input.empty() ) return 1; // handle no image / camera
+
+  // create a window
+  Point pt1( width/2-size/2, height/2-size/2 );
+  Point pt2( width/2+size/2, height/2+size/2 );
+  namedWindow( "input", 1 );
+  imshow( "input", img_input );
+
+
+  // main loop
   while ( true )
     {
+      //base commands
       char c = (char)waitKey(50); // attend 50ms -> 20 images/s
       if ( pCap != nullptr && ! freeze )
         (*pCap) >> img_input;     // récupère l'image de la caméra
@@ -202,6 +207,8 @@ int main( int argc, char** argv )
         break;
       if ( c == 'f' ) // permet de geler l'image
         freeze = ! freeze;
+
+
       if (c == 'v')
       {
           // Calculate color distribution for the left and right parts of the screen
@@ -240,6 +247,7 @@ int main( int argc, char** argv )
         int nb_hists_background = col_hists.size();
         cout << "Number of background color distributions: " << nb_hists_background << endl;
       }
+      //add details to the object we want to recognize
       if (c == 'a')
       {
           // Calculate color distribution for the region inside the white rectangle
@@ -251,6 +259,7 @@ int main( int argc, char** argv )
           int nb_hists_object = col_hists_object.size();
           cout << "Number of object color distributions: " << nb_hists_object << endl;
       }
+      //save all the details previously added to the object we want to recognize
       if(c=='d')
       {
         //push current col_hists_object to col_hists_multiple_objects
@@ -258,6 +267,7 @@ int main( int argc, char** argv )
         col_hists_object.clear();
         cout << "Number of different objects saved: " << col_hists_multiple_objects.size() << endl;
       }
+      //switch to recognition mode
       if (c == 'r')
       {
           if (!col_hists.empty() && !col_hists_multiple_objects.empty()) {
@@ -270,12 +280,7 @@ int main( int argc, char** argv )
 
       Mat output = img_input;
       if ( recognitionMode ) 
-      { // mode reconnaissance
-        // Mat gray;
-        // cvtColor(img_input, gray, COLOR_BGR2GRAY);
-        // Mat reco = recoObject( img_input, col_hists, col_hists_object, {Vec3b(0, 0, 0), Vec3b(0, 0, 255)}, 8 );
-        // cvtColor(gray, img_input, COLOR_GRAY2BGR);
-        // output = 0.5 * reco + 0.5 * img_input;
+      {
         //loop over all objects and display them in different colors
         output = 0.5 * img_input;
         for (int i = 0; i < col_hists_multiple_objects.size(); i++)
