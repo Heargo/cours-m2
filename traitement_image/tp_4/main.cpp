@@ -143,7 +143,7 @@ Mat recoObject(Mat input,
             Vec3b color = (label == "Background") ? colors[0] : colors[1];
 
             
-            rectangle(output, pt1_block, pt2_block, Scalar(color[0], color[1], color[2]), -1);
+            rectangle(output, pt1_block, pt2_block, Scalar(color[0], color[1], color[2]), FILLED);
             
         }
     }
@@ -151,7 +151,19 @@ Mat recoObject(Mat input,
     return output;
 }
 
-
+Vec3b colorSeed(int seed)
+{
+    const Vec3b colors[7] = {
+        Vec3b(255, 0, 0),
+        Vec3b(0, 255, 0),
+        Vec3b(0, 0, 255),
+        Vec3b(255, 255, 0),
+        Vec3b(255, 0, 255),
+        Vec3b(0, 255, 255),
+        Vec3b(255, 255, 255)
+    };
+    return colors[seed % 7];
+}
 
 int main( int argc, char** argv )
 {
@@ -178,6 +190,7 @@ int main( int argc, char** argv )
   bool freeze = false;
   std::vector<ColorDistribution> col_hists;
   std::vector<ColorDistribution> col_hists_object;
+  std::vector<std::vector<ColorDistribution>> col_hists_multiple_objects;
   bool recognitionMode = false;
 
   while ( true )
@@ -238,9 +251,16 @@ int main( int argc, char** argv )
           int nb_hists_object = col_hists_object.size();
           cout << "Number of object color distributions: " << nb_hists_object << endl;
       }
+      if(c=='d')
+      {
+        //push current col_hists_object to col_hists_multiple_objects
+        col_hists_multiple_objects.push_back(col_hists_object);
+        col_hists_object.clear();
+        cout << "Number of different objects saved: " << col_hists_multiple_objects.size() << endl;
+      }
       if (c == 'r')
       {
-          if (!col_hists.empty() && !col_hists_object.empty()) {
+          if (!col_hists.empty() && !col_hists_multiple_objects.empty()) {
               recognitionMode = true;
               cout << "Switched to recognition mode" << endl;
           } else {
@@ -248,42 +268,25 @@ int main( int argc, char** argv )
           }
       }
 
-      if (recognitionMode)
-      {
-          // Recognition mode logic
-          const int block_size = 8; // You can adjust this value (8x8 or 16x16)
-          for (int y = 0; y <= height - block_size; y += block_size)
-          {
-              for (int x = 0; x <= width - block_size; x += block_size)
-              {
-                  Point pt1_block(x, y);
-                  Point pt2_block(x + block_size, y + block_size);
-
-                  // Calculate ColorDistribution on the block (x,y) -> (x+block_size, y+block_size)
-                  ColorDistribution cd_block = getColorDistribution(img_input, pt1_block, pt2_block);
-
-                  // Calculate distances
-                  float dist_background = minDistance(cd_block, col_hists);
-                  float dist_object = minDistance(cd_block, col_hists_object);
-
-                  // Determine the label based on the minimum distance
-                  string label = (dist_background < dist_object) ? "Background" : "Object";
-
-                  // Draw label on the image
-                  putText(img_input, label, Point(x, y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255, 255, 255), 1, LINE_AA);
-              }
-          }
-      }
-
-
       Mat output = img_input;
       if ( recognitionMode ) 
       { // mode reconnaissance
-        Mat gray;
-        cvtColor(img_input, gray, COLOR_BGR2GRAY);
-        Mat reco = recoObject( img_input, col_hists, col_hists_object, {Vec3b(0, 0, 0), Vec3b(0, 0, 255)}, 8 );
-        cvtColor(gray, img_input, COLOR_GRAY2BGR);
-        output = 0.5 * reco + 0.5 * img_input; //!FIX ME mélange reco + caméra
+        // Mat gray;
+        // cvtColor(img_input, gray, COLOR_BGR2GRAY);
+        // Mat reco = recoObject( img_input, col_hists, col_hists_object, {Vec3b(0, 0, 0), Vec3b(0, 0, 255)}, 8 );
+        // cvtColor(gray, img_input, COLOR_GRAY2BGR);
+        // output = 0.5 * reco + 0.5 * img_input;
+        //loop over all objects and display them in different colors
+        output = 0.5 * img_input;
+        for (int i = 0; i < col_hists_multiple_objects.size(); i++)
+        {
+            Mat reco = recoObject(img_input, 
+                                col_hists,
+                                col_hists_multiple_objects[i],
+                                {Vec3b(0, 0, 0), colorSeed(i)},
+                                8);
+            output += (0.5/col_hists_multiple_objects.size()) * reco;
+        }
       }
       else
         cv::rectangle( img_input, pt1, pt2, Scalar( { 255.0, 255.0, 255.0 } ), 1 );
