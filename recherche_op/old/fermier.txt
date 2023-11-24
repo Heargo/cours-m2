@@ -1,0 +1,3 @@
+(rive_1)--(chevre)
+(rive_1)--(chou)
+(rive_1)--(loup)
