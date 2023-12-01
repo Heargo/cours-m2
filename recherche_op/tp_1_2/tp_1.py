@@ -52,3 +52,21 @@ print("nb composante connexe non oriente\n",
 
 g_test = Graph("./test.txt")
 print("test connex", g_test.nb_composantes_connexes())
+
+# Question 6
+print("\n\nQUESTION 6\n")
+# g_rang = Graph("./rang.txt")
+# rang = g_rang.get_rangs()
+# print(f"les rang sont {rang}")
+
+print("\n\dijkstra\n")
+g_dijkstra = Graph("./dijstra.txt")
+
+print("dijkstra\n", g_dijkstra.get_matrice_adjacence_pondere())
+
+dj = g_dijkstra.dijkstra(1)
+
+print("dijkstra", dj)
+
+
+print("FLOYD\n")

@@ -3,7 +3,7 @@ import numpy as np
 from Sommet import Sommet
 
 pattern = re.compile(
-    r'(?P<a>\w+)(?P<direction>(?:->)|(?:<-)|(?:--))(?P<b>\w+)')
+    r'(?P<a>\w+)(?P<direction>(?:-(-|[0-9]*)->)|(?:<-(-|[0-9]*)-)|(?:-(-|[0-9]*)-))(?P<b>\w+)')
 
 
 class Graph():
@@ -36,8 +36,8 @@ class Graph():
         self.sommets.append(s)
         return s
 
-    def add_arc(self, a, b, both=False):
-        self.arcs.append((a, b))
+    def add_arc(self, a, b, w, both=False):
+        self.arcs.append((a, b, w))
         # print(f"add arc {a} -> {b} | {type(a)} -> {type(b)}")
         a.add_voisin(b)
         if both:
@@ -45,7 +45,7 @@ class Graph():
 
     def remove_arc(self, a, b, both=False):
         for arc in self.arcs:
-            if (arc[0] == a and arc[1] == b) or (arc[0].label == b and arc[1].label == a):
+            if (arc[0] == a and arc[1] == b) or (both and arc[0].label == b and arc[1].label == a):
                 self.arcs.remove(arc)
                 a.remove_voisin(b)
                 if both:
@@ -62,6 +62,82 @@ class Graph():
                               self.first][arc[1].index-self.first] = 1
 
         return np.array(matrice_adjacence)
+
+    def get_matrice_adjacence_pondere(self):
+        matrice_adjacence = []
+        for i in range(len(self.sommets)):
+            matrice_adjacence.append([0]*len(self.sommets))
+
+        for arc in self.arcs:
+            matrice_adjacence[arc[0].index-self.first][arc[1].index -
+                                                       self.first] = arc[2]
+
+        return np.array(matrice_adjacence, dtype=np.float64)
+
+    def dijkstra(self, start):
+        matrice_adjacence = self.get_matrice_adjacence_pondere()
+        matrice_adjacence[matrice_adjacence == 0] = np.inf
+        d = matrice_adjacence.copy()
+        # put 0 in diagonal of d
+        np.fill_diagonal(d, 0)
+        # calculer le chemin le plus court entre start et tous les autres sommets
+        for k in range(len(matrice_adjacence)):
+            for i in range(len(matrice_adjacence)):
+                for j in range(len(matrice_adjacence)):
+                    if d[i][j] > d[i][k] + d[k][j]:
+                        d[i][j] = d[i][k] + d[k][j]
+
+        return d[start-self.first]
+
+    def dijkstra_with_path(self, start, end):
+        matrice_adjacence = self.get_matrice_adjacence_pondere()
+        matrice_adjacence[matrice_adjacence == 0] = np.inf
+        d = matrice_adjacence.copy()
+        # put 0 in diagonal of d
+        np.fill_diagonal(d, 0)
+        path = d.copy()
+        # calculer le chemin le plus court entre start et tous les autres sommets
+        for k in range(len(matrice_adjacence)):
+            for i in range(len(matrice_adjacence)):
+                for j in range(len(matrice_adjacence)):
+                    if d[i][j] > d[i][k] + d[k][j]:
+                        # store weight and where we come from
+                        d[i][j] = d[i][k] + d[k][j]
+                        path[i][j] = k
+
+        path_final = []
+        current = end
+        while current != start:
+            path_final.append(current)
+            current = path[start-self.first][current-self.first]
+        print("path final", path)
+        return path_final
+
+    def floyd(self):
+        w = self.get_matrice_adjacence_pondere()
+        p = w.copy()
+        w[w == 0] = float('inf')
+        np.fill_diagonal(w, 0)
+        for i in range(len(p)):
+            for j in range(len(p[i])):
+                if (p[i, j] != 0):
+                    p[i, j] = j
+
+        for k in range(len(w)):
+            for i in range(len(w)):
+                for j in range(len(w)):
+                    if w[i][j] > w[i][k] + w[k][j]:
+                        w[i][j] = w[i][k] + w[k][j]
+                        p[i][j] = k
+
+        return w, p
+
+    # Fait comme floyd mais avec les chemins
+    def floyd_path(p, start, end):
+        if (p[start, end] == end):
+            return [start, end]
+        else:
+            return floyd_path(p, start, p[start, end]) + floyd_path(p, p[start, end], end)[1:]
 
     def get_degre_entrant(self, sommet):
         matrice_adjacence = self.get_matrice_adjacence()
@@ -170,6 +246,28 @@ class Graph():
                 cc_count += 1
         return cc_count
 
+    def get_rangs(self):
+        matrice_adjacence = self.get_matrice_adjacence()
+        rangs = {}
+        for i in range(1, len(matrice_adjacence)):
+            if (self.get_degre_entrant(self.get_sommet(i)) == 0):
+                rangs[i] = 0
+            else:
+                rangs[i] = None
+        for x in range(0, len(matrice_adjacence)-self.first):
+            for k in range(0, len(matrice_adjacence)-self.first):
+                if (rangs[k] == None):
+                    pred = np.argwhere(matrice_adjacence[:, k-1] > 0)
+                    tous_def = True
+                    predecesseur = pred.reshape(-1)
+                    for c in predecesseur:
+                        if (rangs[c-self.first] == None):
+                            tous_def = False
+                            break
+                    if (tous_def):
+                        rangs[k] = rangs[max(predecesseur+1)] + 1
+        return rangs
+
     def read_file(self):
         with open(self.filename) as f:
             for line in f:
@@ -185,13 +283,15 @@ class Graph():
                     b_sommet = self.add_sommet(b)
 
                     direction = match.group('direction')
-                    if direction == '->':
-                        self.add_arc(a_sommet, b_sommet)
-                    elif direction == '<-':
-                        self.add_arc(b_sommet, a_sommet)
-                    elif direction == '--':
-                        self.add_arc(a_sommet, b_sommet)
-                        self.add_arc(b_sommet, a_sommet)
+                    weight = direction[1:-1].replace('-', '')
+                    weight = 1 if weight == '' else int(weight)
+                    if '>' in direction:
+                        self.add_arc(a_sommet, b_sommet, weight)
+                    elif '<' in direction:
+                        self.add_arc(b_sommet, a_sommet, weight)
+                    else:
+                        self.add_arc(a_sommet, b_sommet, weight)
+                        self.add_arc(b_sommet, a_sommet, weight)
                 else:
                     print("syntax error in line", line)
                     exit(1)
