@@ -90,6 +90,21 @@ class Graph():
         elif random_transfo == 3:
             return self.voisinage_2_opt(chemin, randint(0, len(chemin) - 1), randint(0, len(chemin) - 1))
 
+    def random_voisinage_smart(self, chemin, same_pairs=[]):
+        random_transfo = randint(0, 2)
+        if random_transfo == 0:
+            return self.swap_with_next(chemin, randint(0, len(chemin) - 1))
+        elif random_transfo == 1:
+            # take random pair of cities that is not in same_pairs
+            i = randint(0, len(chemin) - 1)
+            j = randint(0, len(chemin) - 1)
+            while (i, j) in same_pairs or (j, i) in same_pairs:
+                i = randint(0, len(chemin) - 1)
+                j = randint(0, len(chemin) - 1)
+            return self.swap_indexes(chemin, i, j)
+        elif random_transfo == 2:
+            return self.voisinage_2_opt(chemin, randint(0, len(chemin) - 1), randint(0, len(chemin) - 1))
+
     def verif_dupli(self, chemin):
         unique, counts = np.unique(chemin, return_counts=True)
         if len(unique) != sum(counts):
@@ -101,6 +116,48 @@ class Graph():
         best_distance = self.get_distance(chemin)
         for i in range(max_iter):
             new_chemin = self.random_voisinage(best_chemin)
+            self.verif_dupli(new_chemin)
+            new_distance = self.get_distance(new_chemin)
+            if new_distance < best_distance:
+                best_chemin = new_chemin
+                best_distance = new_distance
+        return best_chemin
+
+    def best_chemin_less_stupid(self, chemin, max_iter=100):
+        best_chemin = chemin.copy()
+        best_distance = self.get_distance(chemin)
+
+        greedy_paths = []
+        for i in range(len(self.cities)):
+            chemin = self.best_chemin_greedy(i)
+            greedy_paths.append(chemin)
+
+        # find all pairs of cities that are next to each other in all greedy paths
+        same_pairs = []
+        pairs_per_path = {}
+        for p in range(len(greedy_paths)):
+            pairs_per_path[p] = []
+            for i in range(len(greedy_paths[p])):
+                pair = (greedy_paths[p][i], greedy_paths[p]
+                        [(i+1) % len(greedy_paths[p])])
+                same_pairs.append(pair
+                                  )
+
+        # print("same_pairs", same_pairs)
+        # remove any pair that is not in all greedy paths
+        for pair in same_pairs:
+            for p in range(len(greedy_paths)):
+                if pair not in pairs_per_path[p] and pair[::-1] not in pairs_per_path[p]:
+                    try:
+                        same_pairs.remove(pair)
+                        same_pairs.remove(pair[::-1])
+                    except:
+                        pass
+
+        # print("same_pairs", same_pairs)
+
+        for i in range(max_iter):
+            new_chemin = self.random_voisinage_smart(best_chemin)
             self.verif_dupli(new_chemin)
             new_distance = self.get_distance(new_chemin)
             if new_distance < best_distance:
@@ -141,7 +198,8 @@ class Graph():
         # set temp
         temperature = temperature_initiale
         # init chemin with greedy one
-        chemin_actuel = self.best_chemin_greedy()
+        chemin_actuel = [105, 96, 47, 12, 111, 81, 98, 108, 241, 23, 87, 34, 38, 177, 210, 173, 223, 41, 161, 46, 55, 1, 122, 144, 72, 64, 132, 137, 239, 84, 190, 107, 196, 52, 219, 60, 154, 136, 143, 181, 214, 14, 180, 127, 246, 145, 27, 20, 117, 9, 90, 83, 157, 176, 21, 57, 209, 104, 220, 99, 45, 53, 226, 71, 49, 166, 3, 156, 17, 215, 91, 230, 164, 192, 131, 183, 50, 228, 140, 7, 224, 211, 186, 172, 65, 35, 59, 229, 187, 237, 42, 198, 179, 79, 16, 159, 67, 109, 233, 146, 167, 163, 69, 101, 200, 182, 95, 0, 85, 24, 202, 199, 80, 240, 206, 234, 76, 232, 112, 125, 160, 171, 88, 5,
+                         51, 61, 92, 32, 37, 6, 153, 242, 58, 155, 203, 193, 213, 249, 227, 134, 94, 39, 150, 113, 126, 110, 44, 243, 8, 124, 118, 28, 204, 208, 231, 221, 139, 86, 19, 73, 100, 29, 236, 222, 218, 188, 106, 248, 68, 205, 147, 216, 225, 33, 115, 151, 89, 123, 133, 162, 244, 43, 56, 201, 66, 169, 70, 235, 247, 175, 138, 40, 128, 121, 130, 184, 189, 152, 238, 18, 11, 48, 15, 197, 25, 245, 13, 77, 93, 119, 4, 30, 82, 114, 178, 191, 174, 158, 74, 103, 78, 135, 142, 26, 149, 36, 170, 62, 194, 54, 75, 63, 141, 168, 185, 31, 217, 212, 10, 97, 165, 120, 207, 102, 2, 129, 195, 22, 116, 148]
         # init best chemin by first one
         meilleur_chemin = chemin_actuel
         best_distance = self.get_distance(chemin_actuel)

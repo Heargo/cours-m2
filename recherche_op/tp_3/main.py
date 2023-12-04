@@ -1,7 +1,7 @@
 from Graph import Graph
 import numpy as np
 from random import randint
-
+from time import time
 # 1) Prendre le fichier defi250.csv
 g = Graph("./defi250.csv")
 
@@ -59,13 +59,20 @@ print(f"opt2 on a:{a} b:{b}", voisin)
 # obtenir Sigma
 greedy = g.best_start_greedy()
 print("distance greedy", g.get_distance(greedy))  # 14.181429278042408
+# t = time()
+# opti = g.best_chemin_less_stupid(greedy, max_iter=5000)
+# print("distance opti", g.get_distance(opti))
+# print("time", time() - t, "seconds (", (time() - t)/60, "minutes)")
+# save opti chemin to opti.txt
+# with open("opti_better.txt", "w") as f:
+#     f.write(str(opti))
 # g.show_chemin(greedy)
 
 # 10) Recuit simulé
 
 recuit_simule = g.recuit_simule()
 print("distance recuit_simule", g.get_distance(recuit_simule))
-g.show_chemin(recuit_simule)
+g.show_chemin(recuit_simule, step=0.1)
 
 # use ant colony optimization
 # aco = g.get_chemin_ant_algorithm(
