@@ -1,0 +1,316 @@
+{
+  "programming language": {
+    "type": "domain",
+    "aliases": [""],
+    "linkedSubjects": ["algorithm", "program", "computer science"],
+    "definition": "system of notation for writing computer programs",
+    "pronounce": "pro-gramme-ingue lent-gu-ai-je"
+  },
+  "java": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": ["OOP", "class", "high-level"],
+    "definition": "high-level, class-based, object-oriented programming language that is designed to have as few implementation dependencies as possible.",
+    "pronounce": "gea-va"
+  },
+  "python": {
+    "type": "programming language",
+    "aliases": ["py"],
+    "linkedSubjects": ["high-level", "easy-to-learn"],
+    "definition": "high-level, general-purpose programming language. Its design philosophy emphasizes code readability with the use of significant indentation.",
+    "pronounce": "pi-ton"
+  },
+  "algorithm": {
+    "type": "concept",
+    "aliases": ["program"],
+    "linkedSubjects": ["programming language", "maths", "function"],
+    "definition": "finite sequence of rigorous instructions, typically used to solve a class of specific problems or to perform a computation",
+    "pronounce": "al-go-ride-um"
+  },
+  "high-level": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": ["programming language", "low-level"],
+    "definition": "programming language that enables a programmer to write programs that are more or less independent of a particular type of computer.",
+    "pronounce": "haïe levele"
+  },
+  "low-level": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": ["programming language", "high-level"],
+    "definition": "programming language that provides little or no abstraction from a computer's instruction set architecture.",
+    "pronounce": "lo levele"
+  },
+  "OOP": {
+    "type": "concept",
+    "aliases": ["object-oriented programming"],
+    "linkedSubjects": ["programming language", "class"],
+    "definition": "programming paradigm based on the concept of objects, which can contain data, in the form of fields, and code, in the form of procedures.",
+    "pronounce": "O O P"
+  },
+  "class": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": ["programming language", "OOP"],
+    "definition": "construct that defines a collection of variables and methods in a programming language.",
+    "pronounce": "classe"
+  },
+  "easy-to-learn": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": ["programming language", "python"],
+    "definition": "programming language that is designed to be easy for a user to learn.",
+    "pronounce": "izi tou leurn"
+  },
+  "C": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": ["low-level", "system programming", "imperative"],
+    "definition": "general-purpose, procedural computer programming language supporting structured programming, lexical variable scope, and recursion, with a static type system.",
+    "pronounce": "ci"
+  },
+  "C++": {
+    "type": "programming language",
+    "aliases": ["cpp"],
+    "linkedSubjects": ["low-level", "system programming", "imperative", "OOP"],
+    "definition": "general-purpose programming language created by Bjarne Stroustrup as an extension of the C programming language, or 'C with Classes'.",
+    "pronounce": "ci plus plus"
+  },
+  "imperative": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": ["programming language", "C", "C++"],
+    "definition": "programming paradigm that uses statements that change a program's state.",
+    "pronounce": "im-pé-ra-tive"
+  },
+  "system programming": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": ["programming language", "C", "C++"],
+    "definition": "programming paradigm that involves programming at a fairly low level of abstraction, typically, but not necessarily, at the level of the operating system's Application Programming Interface.",
+    "pronounce": "système pro-gramme-ingue"
+  },
+  "javascript": {
+    "type": "programming language",
+    "aliases": ["js"],
+    "linkedSubjects": ["high-level", "web", "front-end", "back-end"],
+    "definition": "high-level, interpreted programming language that conforms to the ECMAScript specification.",
+    "pronounce": "ja-va scripte"
+  },
+  "web": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": [
+      "programming language",
+      "javascript",
+      "front-end",
+      "back-end"
+    ],
+    "definition": "system of interlinked hypertext documents accessed via the Internet.",
+    "pronounce": "oueb"
+  },
+  "front-end": {
+    "type": "concept",
+    "aliases": ["front"],
+    "linkedSubjects": ["programming language", "javascript", "web", "back-end"],
+    "definition": "part of a website that users interact with directly.",
+    "pronounce": "fron-te end"
+  },
+  "back-end": {
+    "type": "concept",
+    "aliases": ["back"],
+    "linkedSubjects": [
+      "programming language",
+      "javascript",
+      "web",
+      "front-end"
+    ],
+    "definition": "part of a website that users do not interact with directly.",
+    "pronounce": "baque end"
+  },
+  "PHP": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": [
+      "web",
+      "back-end",
+      "server-side",
+      "html",
+      "css",
+      "javascript",
+      "mysql"
+    ],
+    "definition": "general-purpose scripting language especially suited to web development.",
+    "pronounce": "pi-haïche-pi"
+  },
+  "server-side": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": [
+      "programming language",
+      "PHP",
+      "html",
+      "css",
+      "javascript",
+      "mysql"
+    ],
+    "definition": "computing model in which an authoritative server hosts data that is then accessed by a client.",
+    "pronounce": "serveur saïde"
+  },
+  "html": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": ["web", "front-end", "css", "javascript", "mysql"],
+    "definition": "standard markup language for documents designed to be displayed in a web browser.",
+    "pronounce": "aïche-ti-emmelle"
+  },
+  "css": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": ["web", "front-end", "html", "javascript", "mysql"],
+    "definition": "style sheet language used for describing the presentation of a document written in a markup language like HTML.",
+    "pronounce": "ci-esse-esse"
+  },
+  "mysql": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": [
+      "web",
+      "back-end",
+      "server-side",
+      "html",
+      "css",
+      "javascript",
+      "PHP"
+    ],
+    "definition": "open-source relational database management system.",
+    "pronounce": "maïe-esse-que-elle"
+  },
+  "ruby": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": [
+      "web",
+      "back-end",
+      "server-side",
+      "html",
+      "css",
+      "javascript",
+      "PHP"
+    ],
+    "definition": "dynamic, interpreted, reflective, object-oriented, general-purpose programming language.",
+    "pronounce": "ru-bi"
+  },
+  "R": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": [
+      "data science",
+      "statistics",
+      "data analysis",
+      "data visualization"
+    ],
+    "definition": "programming language and free software environment for statistical computing and graphics.",
+    "pronounce": "erre"
+  },
+  "data science": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": [
+      "programming language",
+      "R",
+      "statistics",
+      "data analysis",
+      "data visualization"
+    ],
+    "definition": "interdisciplinary field that uses scientific methods, processes, algorithms and systems to extract knowledge and insights from data in various forms, both structured and unstructured.",
+    "pronounce": "da-ta saïence"
+  },
+  "statistics": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": [
+      "programming language",
+      "R",
+      "data science",
+      "data analysis",
+      "data visualization"
+    ],
+    "definition": "branch of mathematics dealing with the collection, analysis, interpretation, presentation, and organization of data.",
+    "pronounce": "sta-tis-tiks"
+  },
+  "data analysis": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": [
+      "programming language",
+      "R",
+      "data science",
+      "statistics",
+      "data visualization"
+    ],
+    "definition": "process of inspecting, cleansing, transforming, and modeling data with the goal of discovering useful information, informing conclusions, and supporting decision-making.",
+    "pronounce": "da-ta a-na-li-zis"
+  },
+  "data visualization": {
+    "type": "concept",
+    "aliases": [""],
+    "linkedSubjects": [
+      "programming language",
+      "R",
+      "data science",
+      "statistics",
+      "data analysis"
+    ],
+    "definition": "graphic representation of data or information.",
+    "pronounce": "da-ta vi-zual-aï-za-tion"
+  },
+  "MATLAB": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": [
+      "data science",
+      "statistics",
+      "data analysis",
+      "data visualization"
+    ],
+    "definition": "multi-paradigm numerical computing environment and proprietary programming language developed by MathWorks.",
+    "pronounce": "mat-lab"
+  },
+  "Julia": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": [
+      "data science",
+      "statistics",
+      "data analysis",
+      "data visualization"
+    ],
+    "definition": "high-level, high-performance, dynamic programming language.",
+    "pronounce": "dju-li-a"
+  },
+  "Scala": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": [
+      "data science",
+      "statistics",
+      "data analysis",
+      "data visualization"
+    ],
+    "definition": "general-purpose programming language providing support for functional programming and a strong static type system.",
+    "pronounce": "sca-la"
+  },
+  "Go": {
+    "type": "programming language",
+    "aliases": [""],
+    "linkedSubjects": [
+      "data science",
+      "statistics",
+      "data analysis",
+      "data visualization"
+    ],
+    "definition": "open source programming language that makes it easy to build simple, reliable, and efficient software.",
+    "pronounce": "go"
+  }
+}
