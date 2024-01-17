@@ -35,7 +35,7 @@ class EncodeurDecodeur:
                     pixels[i, j] = (r, g, b)
                     # update image with new pixel
                     img.putpixel((i, j), (r, g, b))
-        img.save('output.png')
+        img.save(output)
         return img
 
     def read(self):

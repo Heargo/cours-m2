@@ -4,8 +4,7 @@ import os
 from PIL import Image
 from EncodeurDecodeur import EncodeurDecodeur
 from Signateur import Signateur
-
-END_MESSAGE = "######"
+from DiplomeGenerator import DiplomeGenerator
 
 
 def open_image(image_path):
@@ -25,27 +24,38 @@ def decode_message_in_image(path, algorithm):
 
 
 if (__name__ == '__main__'):
-    parser = argparse.ArgumentParser(description='TP2 - Criptografia')
+    parser = argparse.ArgumentParser(description='TP2 - crypto')
     parser.add_argument(
-        '-i', '--image', help='Input image (png or ppm format)', required=True)
+        '-i', '--image', help='Input image (png or ppm format)', required=False)
     parser.add_argument('-m', '--message',
                         help='message to encode', required=False)
-    parser.add_argument('-a', '--algorithm', help='Algorithm', required=True)
+    parser.add_argument('-a', '--algorithm', help='Algorithm', required=False)
     parser.add_argument(
         '-d', '--decrypt', help='if not specified, the message will be encrypted', required=False)
+    parser.add_argument('-n', '--name', help='name', required=False)
+    parser.add_argument('-da', '--date', help='date', required=False)
+    parser.add_argument('-me', '--mention', help='mention', required=False)
+    parser.add_argument('-o', '--output', help='output file', required=False)
+    parser.add_argument('-f', '--function', help='function', required=False)
     args = parser.parse_args()
 
-    # check if input file exists
-    if (not os.path.isfile(args.image)):
-        print('Input file does not exist')
-        exit(1)
+    # # check if input file exists
+    # if (not os.path.isfile(args.image)):
+    #     print('Input file does not exist')
+    #     exit(1)
 
-    # check if algorithm is valid
-    if (args.algorithm not in ['basic', 'sign']):
-        print('Algorithm not supported')
-        exit(1)
+    # # check if algorithm is valid
+    # if (args.algorithm not in ['basic', 'sign']):
+    #     print('Algorithm not supported')
+    #     exit(1)
 
     algo = None
+    diplome_generator = DiplomeGenerator()
+
+    if (args.function == 'generate'):
+        diplome_generator.generate(
+            args.output, args.name, args.date, args.mention)
+        exit(0)
 
     if (args.algorithm == 'basic'):
         encodeur_decodeur = EncodeurDecodeur(args.image)

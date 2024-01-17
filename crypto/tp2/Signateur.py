@@ -78,6 +78,7 @@ class Signateur(EncodeurDecodeur):
             pkcs1_15.new(self.public_key).verify(h, s_bytes)
             print("The signature is authentic.")
             print("message: ", message)
+            return message
         except ValueError:
             print("The signature is not authentic. Message is corrupted.")
 
