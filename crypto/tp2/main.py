@@ -59,7 +59,7 @@ if (__name__ == '__main__'):
 
     if (args.algorithm == 'basic'):
         encodeur_decodeur = EncodeurDecodeur(args.image)
-    elif (args.algorithm == 'sign'):
+    elif (args.algorithm == 'sign'):  
         encodeur_decodeur = Signateur(args.image)
 
     if (args.decrypt is None):

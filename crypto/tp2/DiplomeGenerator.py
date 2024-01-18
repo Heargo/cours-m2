@@ -10,6 +10,9 @@ class DiplomeGenerator:
 
     def generate(self, output="diplome.png", name="John", date="01/01/2018", mention=""):
 
+        if (mention is None):
+            mention = ""
+
         self.add_text_center("Diplôme de Maître Table",
                              150, font="Raleway-medium.ttf", size=48)
         self.add_text_center("Ce diplôme certifie que", 230, size=20)
@@ -20,7 +23,7 @@ class DiplomeGenerator:
         if (mention != ""):
             self.add_text_center(mention, 460, size=24)
         # save image
-        # self.img.save(output)
+        self.img.save(output)
         self.sign_diplome(
             output, "Diplôme de Maître Table, " + name + ", le "+date + " "+mention)
 
@@ -36,5 +39,6 @@ class DiplomeGenerator:
     def add_text_center(self, text, y, font="Raleway-medium.ttf", size=32, color="black"):
         draw = ImageDraw.Draw(self.img)
         font = ImageFont.truetype(font, size)
-        w, h = draw.textsize(text, font)
+        bbox = font.getbbox(text)
+        w = bbox[2] - bbox[0]
         draw.text(((self.img.width - w) / 2, y), text, color, font)
