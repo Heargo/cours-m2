@@ -57,10 +57,15 @@ class Signateur(EncodeurDecodeur):
         self.get_key('public')
         return self.decode_signed()
 
-    def sign_message(self, message, output="output.png"):
-        signer = pkcs1_15.new(self.private_key)
+    def get_signature(self, message):
+        self.get_key('private')
         h = SHA384.new(data=self.str_to_bytes(message))
+        signer = pkcs1_15.new(self.private_key)
         signature = signer.sign(h)
+        return signature
+
+    def sign_message(self, message, output="output.png"):
+        signature = self.get_signature(message)
         # signature as hexdigest
         encoded_sign = signature.hex() + self.MESSAGE_SPLIT + \
             message

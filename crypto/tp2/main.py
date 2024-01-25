@@ -37,6 +37,8 @@ if (__name__ == '__main__'):
     parser.add_argument('-me', '--mention', help='mention', required=False)
     parser.add_argument('-o', '--output', help='output file', required=False)
     parser.add_argument('-f', '--function', help='function', required=False)
+    parser.add_argument('-vu', '--verification-url',
+                        help='url to verify the certificate, example: https://some-university.com/diplome/verify', required=False, default="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     args = parser.parse_args()
 
     # # check if input file exists
@@ -53,18 +55,31 @@ if (__name__ == '__main__'):
     diplome_generator = DiplomeGenerator()
 
     if (args.function == 'generate'):
+        error = False
+        if (args.name is None):
+            print('name is required')
+            error = True
+        if (args.date is None):
+            print('date is required')
+            error = True
+
+        if (error):
+            exit(1)
+
         diplome_generator.generate(
-            args.output, args.name, args.date, args.mention)
+            args.output, args.name, args.date, args.mention, args.verification_url)
         exit(0)
 
-    if (args.algorithm == 'basic'):
-        encodeur_decodeur = EncodeurDecodeur(args.image)
-    elif (args.algorithm == 'sign'):  
-        encodeur_decodeur = Signateur(args.image)
+    if (args.function == 'stenography'):
+        if (args.algorithm == 'basic'):
+            encodeur_decodeur = EncodeurDecodeur(args.image)
+        elif (args.algorithm == 'sign'):
+            encodeur_decodeur = Signateur(args.image)
 
-    if (args.decrypt is None):
-        print("encrypting message...")
-        encode_message_in_image(args.image, args.message, encodeur_decodeur)
-    else:
-        print("decrypting message...")
-        decode_message_in_image(args.image, encodeur_decodeur)
+        if (args.decrypt is None):
+            print("encrypting message...")
+            encode_message_in_image(
+                args.image, args.message, encodeur_decodeur)
+        else:
+            print("decrypting message...")
+            decode_message_in_image(args.image, encodeur_decodeur)

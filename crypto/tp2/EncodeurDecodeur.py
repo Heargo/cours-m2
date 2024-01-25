@@ -6,10 +6,11 @@ class EncodeurDecodeur:
     END_MESSAGE = "######"
 
     def __init__(self, image):
-        self.image = Image.open(image)
+        if (os.path.isfile(image)):
+            self.image = Image.open(image)
 
     def encode(self, message, output="output.png"):
-        return self.write_message(message, output)
+        return self.write(message, output)
 
     def decode(self):
         return self.read()
