@@ -39,7 +39,7 @@ python main.py [options]
 3. Génération d'un diplome :
 
    ```bash
-   python .\main.py -f generate -n "Dupond Dupont" -da "25/01/2024" -me "Avec la mention Bien" -o "diplome.png" -p "https://some-university.com" -vu "https://some-university.com/diplome/verify"
+   python .\main.py -f generate -n "Dupond Dupont" -da "25/01/2024" -me "Avec la mention Bien" -o "diplome.png" -vu "https://some-university.com/diplome/verify"
    ```
 
 ## Remarque
