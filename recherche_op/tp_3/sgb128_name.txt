@@ -1,0 +1,130 @@
+#  sgb127_name.txt
+#
+Youngstown, OH
+Yankton, SD
+Yakima, WA
+Worcester, MA
+Wisconsin Dells, WI
+Winston-Salem, NC
+Winnipeg, MB
+Winchester, VA
+Wilmington, NC
+Wilmington, DE
+Williston, ND
+Williamsport, PA
+Williamson, WV
+Wichita Falls, TX
+Wichita, KS
+Wheeling, WV
+West Palm Beach, FL
+Wenatchee, WA
+Weed, CA
+Waycross, GA
+Wausau, WI
+Waukegan, IL
+Watertown, SD
+Watertown, NY
+Waterloo, IA
+Waterbury, CT
+Washington, DC
+Warren, PA
+Walla Walla, WA
+Waco, TX
+Vincennes, IN
+Victoria, TX
+Vicksburg, MS
+Vancouver, BC
+Valley City, ND
+Valdosta, GA
+Utica, NY
+Uniontown, PA
+Tyler, TX
+Twin Falls, ID
+Tuscaloosa, AL
+Tupelo, MS
+Tulsa, OK
+Tucson, AZ
+Trinidad, CO
+Trenton, NJ
+Traverse City, MI
+Toronto, ON
+Topeka, KS
+Toledo, OH
+Texarkana, TX
+Terre Haute, IN
+Tampa, FL
+Tallahassee, FL
+Tacoma, WA
+Syracuse, NY
+Swainsboro, GA
+Sumter, SC
+Stroudsburg, PA
+Stockton, CA
+Stevens Point, WI
+Steubenville, OH
+Sterling, CO
+Staunton, VA
+Springfield, OH
+Springfield, MO
+Springfield, MA
+Springfield, IL
+Spokane, WA
+South Bend, IN
+Sioux Falls, SD
+Sioux City, IA
+Shreveport, LA
+Sherman, TX
+Sheridan, WY
+Seminole, OK
+Selma, AL
+Sedalia, MO
+Seattle, WA
+Scranton, PA
+Scottsbluff, NB
+Schenectady, NY
+Savannah, GA
+Sault Sainte Marie, MI
+Sarasota, FL
+Santa Rosa, CA
+Santa Fe, NM
+Santa Barbara, CA
+Santa Ana, CA
+San Jose, CA
+San Francisco, CA
+Sandusky, OH
+San Diego, CA
+San Bernardino, CA
+San Antonio, TX
+San Angelo, TX
+Salt Lake City, UT
+Salisbury, MD
+Salinas, CA
+Salina, KS
+Salida, CO
+Salem, OR
+Saint Paul, MN
+Saint Louis, MO
+Saint Joseph, MO
+Saint Joseph, MI
+Saint Johnsbury, VT
+Saint Cloud, MN
+Saint Augustine, FL
+Saginaw, MI
+Sacramento, CA
+Rutland, VT
+Roswell, NM
+Rocky Mount, NC
+Rock Springs, WY
+Rockford, IL
+Rochester, NY
+Rochester, MN
+Roanoke, VA
+Richmond, VA
+Richmond, IN
+Richfield, UT
+Rhinelander, WI
+Reno, NV
+Regina, SA
+Red Bluff, CA
+Reading, PA
+Ravenna, OH

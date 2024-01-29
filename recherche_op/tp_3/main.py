@@ -2,6 +2,8 @@ from Graph import Graph
 import numpy as np
 from random import randint
 from time import time
+from parserCities import get_matrice_from_file, get_cities_positions_from_file
+"""
 # 1) Prendre le fichier defi250.csv
 g = Graph("./defi250.csv")
 
@@ -72,10 +74,27 @@ print("distance greedy", g.get_distance(greedy))  # 14.181429278042408
 
 recuit_simule = g.recuit_simule()
 print("distance recuit_simule", g.get_distance(recuit_simule))
-g.show_chemin(recuit_simule, step=0.1)
+# g.show_chemin(recuit_simule, step=0.1)
 
 # use ant colony optimization
 # aco = g.get_chemin_ant_algorithm(
 #     num_ants=10, num_iterations=10, alpha=0.5, beta=0.5, evaporation_rate=0.1)
 
 # print("distance aco", g.get_distance(aco))
+"""
+# Suite TP3
+
+print("Cas réel")
+
+g_128 = Graph(
+    cities_position=get_cities_positions_from_file("./att532.tsp"))
+# best_greedy = g_128.best_start_greedy()
+# print("distance greedy", g_128.get_distance(best_greedy))
+# recuit_simule = g_128.recuit_simule()
+# print("distance recuit_simule", g_128.get_distance(recuit_simule))
+# g_128.show_chemin(recuit_simule, step=0.01)
+
+
+paths = g_128.get_n_optimal_paths(9)
+print("best paths", paths)
+g_128.show_multiples_paths(paths, step=0.001)

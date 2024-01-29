@@ -16,24 +16,36 @@ class City():
 
 
 class Graph():
-    def __init__(self, filename):
+    def __init__(self, filename=None, matrice_distance=None, cities_position=None):
         self.cities = []
         self.matrice_distance = np.array([])
 
-        data = np.genfromtxt(
-            filename, delimiter=';', skip_header=1, dtype=np.float64)
+        if (filename is not None):
+            data = np.genfromtxt(
+                filename, delimiter=';', skip_header=1, dtype=np.float64)
 
-        for d in data:
-            self.cities.append(City(d[0], d[1]))
+            for d in data:
+                self.cities.append(City(d[0], d[1]))
 
-        self.matrice_distance = np.zeros((len(self.cities), len(self.cities)))
-        for i in range(len(self.cities)):
-            for j in range(len(self.cities)):
-                if (i != j):
-                    distance = self.cities[i].distance(self.cities[j])
-                    self.matrice_distance[i][j] = distance
-                else:
-                    self.matrice_distance[j][i] = np.inf
+        if (cities_position is not None):
+            for c in cities_position:
+                self.cities.append(City(c[0], c[1]))
+
+        if (matrice_distance is None):
+            self.matrice_distance = np.zeros(
+                (len(self.cities), len(self.cities)))
+            for i in range(len(self.cities)):
+                for j in range(len(self.cities)):
+                    if (i != j):
+                        distance = self.cities[i].distance(self.cities[j])
+                        self.matrice_distance[i][j] = distance
+                    else:
+                        self.matrice_distance[j][i] = np.inf
+        else:
+            self.matrice_distance = np.array(matrice_distance)
+
+        # print matrice distance shape
+        print("matrice distance shape is", self.matrice_distance.shape)
 
     def __str__(self):
         return f"Graph with {len(self.cities)} cities"
@@ -47,7 +59,10 @@ class Graph():
         for i in range(len(chemin)):
             from_city = int(chemin[i])
             to_city = int(chemin[(i + 1) % len(chemin)])
+            # try:
             distance += self.matrice_distance[from_city][to_city]
+            # except:
+            # print("from", from_city, "to", to_city)
         return distance
 
     def swap_with_next(self, chemin, i):
@@ -198,8 +213,7 @@ class Graph():
         # set temp
         temperature = temperature_initiale
         # init chemin with greedy one
-        chemin_actuel = [105, 96, 47, 12, 111, 81, 98, 108, 241, 23, 87, 34, 38, 177, 210, 173, 223, 41, 161, 46, 55, 1, 122, 144, 72, 64, 132, 137, 239, 84, 190, 107, 196, 52, 219, 60, 154, 136, 143, 181, 214, 14, 180, 127, 246, 145, 27, 20, 117, 9, 90, 83, 157, 176, 21, 57, 209, 104, 220, 99, 45, 53, 226, 71, 49, 166, 3, 156, 17, 215, 91, 230, 164, 192, 131, 183, 50, 228, 140, 7, 224, 211, 186, 172, 65, 35, 59, 229, 187, 237, 42, 198, 179, 79, 16, 159, 67, 109, 233, 146, 167, 163, 69, 101, 200, 182, 95, 0, 85, 24, 202, 199, 80, 240, 206, 234, 76, 232, 112, 125, 160, 171, 88, 5,
-                         51, 61, 92, 32, 37, 6, 153, 242, 58, 155, 203, 193, 213, 249, 227, 134, 94, 39, 150, 113, 126, 110, 44, 243, 8, 124, 118, 28, 204, 208, 231, 221, 139, 86, 19, 73, 100, 29, 236, 222, 218, 188, 106, 248, 68, 205, 147, 216, 225, 33, 115, 151, 89, 123, 133, 162, 244, 43, 56, 201, 66, 169, 70, 235, 247, 175, 138, 40, 128, 121, 130, 184, 189, 152, 238, 18, 11, 48, 15, 197, 25, 245, 13, 77, 93, 119, 4, 30, 82, 114, 178, 191, 174, 158, 74, 103, 78, 135, 142, 26, 149, 36, 170, 62, 194, 54, 75, 63, 141, 168, 185, 31, 217, 212, 10, 97, 165, 120, 207, 102, 2, 129, 195, 22, 116, 148]
+        chemin_actuel = self.best_start_greedy()
         # init best chemin by first one
         meilleur_chemin = chemin_actuel
         best_distance = self.get_distance(chemin_actuel)
@@ -256,7 +270,7 @@ class Graph():
         plt.arrow(self.cities[from_city].x, self.cities[from_city].y,
                   x, y, head_width=0.01, head_length=0.01, fc=color, ec=color)
 
-    def show_chemin(self, chemin, step=0):
+    def show_chemin(self, chemin, step=0, color='red'):
 
         cities_in_chemin = [self.cities[i] for i in chemin]
 
@@ -266,10 +280,13 @@ class Graph():
         for i in range(len(chemin)):
             from_city = int(chemin[i])
             to_city = int(chemin[(i + 1) % len(chemin)])
-            self.draw_arrow(from_city, to_city)
+            self.draw_arrow(from_city, to_city, color)
             # wait 0.5s
             if (step > 0):
                 plt.pause(step)
+        plt.show()
+
+    def show_graph(self):
         plt.show()
 
     def get_chemin_ant_algorithm(self, num_ants, num_iterations, alpha, beta, evaporation_rate):
@@ -333,3 +350,83 @@ class Graph():
                 pheromones[from_city][to_city] += 1 / self.get_distance(path)
 
         return pheromones
+
+    def calculate_most_centered_city(self):
+        # Calculate the center of the cities
+        center_x = sum([city.x for city in self.cities]) / len(self.cities)
+        center_y = sum([city.y for city in self.cities]) / len(self.cities)
+
+        # Find the city closest to the center
+        center_city = min(self.cities, key=lambda city: city.distance(
+            City(center_x, center_y)))
+
+        city_position = self.cities.index(center_city)
+        print("center city is", center_city, "at position", city_position)
+        return center_city, city_position
+
+    def split_cities_into_parts(self, n):
+        # get the most centered city
+        center_city, city_position = self.calculate_most_centered_city()
+
+        # split into n parts
+        parts = [[] for _ in range(n)]
+
+        # from the center as the center of a circle, split the cities into n parts
+        for city in self.cities:
+            # calculate angle between center city and current city relative to the x axis
+            angle = np.arctan2(city.y - center_city.y, city.x - center_city.x)
+            # calculate the part number (0 to n-1) according to the angle
+            part = int(np.floor(angle / (2 * np.pi / n)))
+            # add the city to the part
+            parts[part].append([city.x, city.y])
+
+        # make sure each part has the center city as first city
+        for part in parts:
+            # remove the center city from the part
+            if ([center_city.x, center_city.y] in part):
+                part.remove([center_city.x, center_city.y])
+            # add the center city as first city of the part
+            part.insert(0, [center_city.x, center_city.y])
+        return parts, city_position
+
+    def get_n_optimal_paths(self, n):
+        # Split the cities into n parts
+        parts, city_position = self.split_cities_into_parts(n)
+        print("parts", parts[0], "\n\n", parts[1])
+        # Calculate the optimal path for each part
+        optimal_paths = []
+        for part in parts:
+            sub_g = Graph(cities_position=part)
+            path = sub_g.best_chemin_greedy(start=0)
+            optimal_paths.append(self.convert_path(part, path))
+
+        return optimal_paths
+
+    def convert_path(self, local_city_list, path):
+        pos = [[c.x, c.y] for c in self.cities]
+        global_path = []
+        for city_index in path:
+            # look index of city in local_city_list in global_city_list
+            print("looking for index of",
+                  local_city_list[city_index], "in current city list")
+            global_path.append(pos.index(
+                local_city_list[city_index]))
+        return global_path
+
+    def show_multiples_paths(self, chemins, step=0):
+        colors = ['red', 'green', 'blue', 'yellow',
+                  'orange', 'purple', 'pink', 'brown', 'black']
+
+        plt.scatter([c.x for c in self.cities],
+                    [c.y for c in self.cities])
+
+        for c_i in range(len(chemins)):
+            chemin = chemins[c_i]
+            for i in range(len(chemin)):
+                from_city = int(chemin[i])
+                to_city = int(chemin[(i + 1) % len(chemin)])
+                self.draw_arrow(from_city, to_city, colors[c_i % len(colors)])
+                # wait 0.5s
+                if (step > 0):
+                    plt.pause(step)
+        plt.show()
