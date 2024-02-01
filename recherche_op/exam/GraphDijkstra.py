@@ -54,6 +54,23 @@ class GraphDijkstra():
                     self.remove_arc(b, a)
                 return
 
+    def get_nb_sommets(self):
+        return len(self.sommets)
+
+    def get_nb_arcs(self):
+        nb = 0
+        pairs = []
+        for arc in self.arcs:
+            pair = (arc[0].index, arc[1].index)
+            ok = True
+            for p in pairs:
+                if (p[0] == pair[0] and p[1] == pair[1]) or (p[0] == pair[1] and p[1] == pair[0]):
+                    ok = False
+            if (ok):
+                pairs.append(pair)
+                nb += 1
+        return nb
+
     def get_matrice_adjacence(self):
         matrice_adjacence = []
         for i in range(len(self.sommets)):
@@ -201,7 +218,7 @@ class GraphDijkstra():
         print("path final", path)
         return path_final
 
-    def floyd(self):
+    def floyd_old(self):
         w = self.get_matrice_adjacence_pondere()
         p = w.copy()
         w[w == 0] = float('inf')
@@ -210,7 +227,9 @@ class GraphDijkstra():
             for j in range(len(p[i])):
                 if (p[i, j] != 0):
                     p[i, j] = j
-
+        # print("Initialisation des deux matrices : ")
+        # print(
+        #     f"Matrice des poids (w) : \n{w} \nMatrice des prédécesseurs (p) : \n{p}")
         for k in range(len(w)):
             for i in range(len(w)):
                 for j in range(len(w)):
@@ -218,6 +237,31 @@ class GraphDijkstra():
                         w[i][j] = w[i][k] + w[k][j]
                         p[i][j] = k
 
+        return w, p
+
+    def floyd(self):
+        w = self.get_matrice_adjacence_pondere()
+        # Mettre des inf si la valeur est 0
+        w[w == 0] = np.inf
+        # Mettre des 0 dans la diagonale
+        np.fill_diagonal(w, 0)
+        p = self.get_matrice_adjacence_pondere()
+
+        # Si on a une valeur différente de 0, on met l'indice de la colonne
+        # print(p[p != 0])
+        for i in range(len(p)):
+            for j in range(len(p[i])):
+                # print(p[i])
+                if (p[i, j] != 0):
+                    p[i, j] = j
+
+        print(f"\nInitialisation des deux matrices :\nw = {w}\n\n p = {p}\n\n")
+        for k in range(len(w)):
+            for i in range(len(w)):
+                for j in range(len(w)):
+                    if w[i][j] > w[i][k] + w[k][j]:
+                        w[i][j] = w[i][k] + w[k][j]
+                        p[i][j] = k
         return w, p
 
     # Fait comme floyd mais avec les chemins
@@ -237,12 +281,6 @@ class GraphDijkstra():
     def get_degre_sortant(self, sommet):
         matrice_adjacence = self.get_matrice_adjacence()
         return sum(matrice_adjacence[sommet.index-self.first])
-
-    def get_nb_sommets(self):
-        return len(self.sommets)
-
-    def get_nb_arcs(self):
-        return len(self.arcs)
 
     def get_sommets(self):
         return self.sommets
@@ -383,3 +421,42 @@ class GraphDijkstra():
                 else:
                     print("syntax error in line", line)
                     exit(1)
+
+    def getMinFlow(sefl, mat, tmpPath):
+        return min([mat[tmpPath[i]][tmpPath[i+1]] for i in range(len(tmpPath)-1)])
+
+    def updateMat(self, mat, tmpPath, tmpFlow):
+        for i in range(len(tmpPath)-1):
+            mat[tmpPath[i]][tmpPath[i+1]] -= tmpFlow
+            mat[tmpPath[i+1]][tmpPath[i]] += tmpFlow
+
+    def getOnePath(self, mat):
+        """
+        Algorithme de recherche de chemin
+        """
+        visited = [False for i in range(len(mat))]
+        visited[0] = True
+        tmpPath = [0]
+        while tmpPath:
+            tmp = tmpPath[-1]
+            if tmp == len(mat)-1:
+                return tmpPath
+            for i in range(len(mat)):
+                if mat[tmp][i] > 0 and not visited[i]:
+                    tmpPath.append(i)
+                    visited[i] = True
+                    break
+            else:
+                tmpPath.pop()
+        return None
+
+    def getFlow(self):
+        mat = self.get_matrice_adjacence_pondere()
+        maxFlow = 0
+        tmpPath = self.getOnePath(mat)
+        while tmpPath is not None:
+            tmpFlow = self.getMinFlow(mat, tmpPath)
+            maxFlow += tmpFlow
+            self.updateMat(mat, tmpPath, tmpFlow)
+            tmpPath = self.getOnePath(mat)
+        return maxFlow, mat
